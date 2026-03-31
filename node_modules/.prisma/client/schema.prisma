@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+  //output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ROLE {
+  ADMIN
+  USER
+  SUPERADMIN
+}
+
+model User {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  email             String              @unique
+  phone             String?
+  photo             String?
+  password          String
+  role              ROLE                @default(USER)
+  events            Event[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  EventParticipants EventParticipants[]
+  Session           Session[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken String   @unique
+  userAgent    String? // navigateur / appareil
+  ipAddress    String? // IP de connexion
+  expiresAt    DateTime // date d'expiration du refresh token
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model EventCategories {
+  id     Int     @id @default(autoincrement())
+  name   String
+  events Event[]
+}
+
+enum EventStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Images {
+  id        Int      @id @default(autoincrement())
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  startAt           DateTime
+  endAt             DateTime
+  userId            Int
+  favory            Boolean             @default(false)
+  status            EventStatus         @default(ACTIVE)
+  user              User                @relation(fields: [userId], references: [id])
+  EventCategories   EventCategories?    @relation(fields: [eventCategoriesId], references: [id])
+  eventCategoriesId Int?
+  address           String?
+  description       String?
+  latitude          Float
+  longitude         Float
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  Images            Json?               @default("[]")
+  EventParticipants EventParticipants[]
+}
+
+model EventParticipants {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  userId    Int
+  event     Event    @relation(fields: [eventId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
