@@ -57,19 +57,19 @@ export const registerUser = async (body: AuthProps) => {
         role: "USER"
     });
 
-    const accessToken = generateToken({ userId: user.id, email: user.email })
-    const refreshtoken = generateToken({ userId: user.id, email: user.email })
-
+   
     return {
-        user,
-        token: accessToken,
-        refreshtoken
+        user:{
+            id: user.id,
+            name: user.name,
+            email: user.email,
+        },
     }
 }
 
 
 
-export const login = async (body: AuthProps): Promise<{
+export const login = async (body: {email:string,password:string}): Promise<{
     user: {
         id: string;
         role: ROLE;
@@ -119,4 +119,10 @@ export const login = async (body: AuthProps): Promise<{
 
     };
 
+}
+
+export const AuthService = {
+    registerUser,
+    login,
+    generateToken
 }

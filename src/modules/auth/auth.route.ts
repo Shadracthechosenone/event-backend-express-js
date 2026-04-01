@@ -1,17 +1,11 @@
 import { Router } from "express";
+import {authController} from "@/src/controllers/auth.controller.js";
 
 const router = Router();
 // Define your routes here
-router.get("/login", (req, res) => {
-    const body = req.body; // Access the request body
-
-    const { username, password } = body; // Destructure username and password from the body
-
+router.get("/login", authController.signUp);
+router.post("/register", authController.signIn);
     
-
-    res.send("Hello from the auth route!"); 
-});
-
 
 export default router;
 
