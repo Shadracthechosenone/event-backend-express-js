@@ -21,19 +21,20 @@ type TokenPayload = {
     email?: string
 }
 
-const SECRET_KEY = process.env.JWT_SECRET_KEY;
-const REFRESH_KEY = process.env.JWT_REFRESH_KEY;
 
 
 
 export const generateToken = (payload: TokenPayload) => {
+    const SECRET_KEY = process.env.JWT_SECRET;
+    const REFRESH_KEY = process.env.JWT_REFRESH_SECRET;
+
 
     if (!SECRET_KEY || !REFRESH_KEY) {
         throw new Error("JWT secrets are not properly configured");
     }
-    const acesstoken = jwt.sign(payload, SECRET_KEY as string, { expiresIn: '1m' })
+    const accesstoken = jwt.sign(payload, SECRET_KEY, { expiresIn: '1m' })
     const refreshtoken = jwt.sign(payload, REFRESH_KEY, { expiresIn: '7d' })
-    return { acesstoken, refreshtoken };
+    return { accesstoken, refreshtoken };
 }
 
 
@@ -57,9 +58,9 @@ export const registerUser = async (body: AuthProps) => {
         role: "USER"
     });
 
-   
+
     return {
-        user:{
+        user: {
             id: user.id,
             name: user.name,
             email: user.email,
@@ -69,7 +70,7 @@ export const registerUser = async (body: AuthProps) => {
 
 
 
-export const login = async (body: {email:string,password:string}): Promise<{
+export const login = async (body: { email: string, password: string }): Promise<{
     user: {
         id: string;
         role: ROLE;
@@ -81,19 +82,19 @@ export const login = async (body: {email:string,password:string}): Promise<{
 }> => {
     const existingUser = await authRepository.findUserByEmailWithPassword(body.email);
     if (!existingUser) {
-        throw new BadRequestError("Email ou mot de passe incorrect");     
+        throw new BadRequestError("Email ou mot de passe incorrect");
     }
 
     const passwordMatch = await bcrypt.compare(body.password, existingUser.password);
 
 
     if (!passwordMatch) {
-        throw new AppError(400,"Email ou mot de passe incorrect");
+        throw new AppError(400, "Email ou mot de passe incorrect");
     }
 
 
     const payload: TokenPayload = { userId: existingUser.id, email: existingUser.email };
-    const { acesstoken: token, refreshtoken } = generateToken(payload);
+    const { accesstoken: token, refreshtoken } = generateToken(payload);
 
     // Créer la session en base
 
@@ -111,7 +112,7 @@ export const login = async (body: {email:string,password:string}): Promise<{
             id: existingUser.id.toString(),
             role: existingUser.role,
             name: existingUser.name,
-            email: existingUser.email,  
+            email: existingUser.email,
         },
 
         accessToken: token,
