@@ -1,7 +1,7 @@
 
 import { db } from '@/src/utils/db.js';
 
-const getAllevents = () => {
+const findAllEvents = () => {
 
     const events = db.event.findMany({
         select: {
@@ -14,11 +14,11 @@ const getAllevents = () => {
 
 }
 
-const getAllEventsbyUserId = (id: number) => {
+export const findEventsByUserId = (id: number) => {
 
     const events = db.event.findMany({
         where: {
-            id: id
+            userId: id
         },
         select: {
 
@@ -31,6 +31,6 @@ const getAllEventsbyUserId = (id: number) => {
 }
 
 export const eventsRepository = {
-    getAllevents,
-    getAllEventsbyUserId
+    findAllEvents,
+    findEventsByUserId
 }   

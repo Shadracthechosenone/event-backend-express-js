@@ -5,22 +5,18 @@ import sendResponse from "../utils/sendResponse.js";
 
 const signUp = asyncHandler(async (req, res): Promise<void> => {
 
-    const { email, password } = req.body;
+    const { name, email, password } = req.body;
     //console.log(password)
 
-    const { user, accessToken, refreshToken } = await AuthService.login({ email, password });
+    const { user } = await AuthService.registerUser({ name, email, password });
 
-    const userId = user.id;
+    const userId = user?.id;
 
     sendResponse(res, 200, {
-        message: "Login successful",
+        message: "Registration successful",
         data: {
             id: userId,
-            name: user.name,
-            email: user.email,
-            AcessToken:accessToken,
-            RefreshToken:refreshToken
-        },
+        }
 
 
 
@@ -28,41 +24,34 @@ const signUp = asyncHandler(async (req, res): Promise<void> => {
 })
 
 export const signIn = asyncHandler(async (req, res): Promise<void> => {
-    const { name, email, password } = req.body;
+    const { email, password } = req.body;
 
-    const result = await AuthService.registerUser({ name, email, password });
+    const result = await AuthService.login({ email, password });
 
 
     if (!result?.user) {
-        res.status(400).json({ error: result?.error || "Registration failed" });
+        res.status(400).json({ error: "Login failed" });
         return;
     }
 
-    const { user } = result;
 
+    sendResponse(res, 200, {
+        message: "Login successful",
 
-    res.json({
-        user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-
+        data: {
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
         }
-    });
-
-
-
+    })
 
 })
 
 
 
+    export const authController = {
+        signUp
+        , signIn
 
-
-export const authController = {
-    signUp
-    , signIn
-
-}
+    }
 
 
