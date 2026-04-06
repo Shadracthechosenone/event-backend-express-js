@@ -124,7 +124,7 @@ export const login = async (body: { email: string, password: string }): Promise<
 
 
 
-const refreshToken = async (OldrefreshToken: string) => {
+const refreshToken = async (OldrefreshToken: string): Promise<{ user: TokenPayload, accessToken: string, refreshToken: string }> => {
     const REFRESH_KEY = process.env.JWT_REFRESH_SECRET;
     if (!REFRESH_KEY) {
         throw new Error("JWT refresh secret is not defined in environment variables");
@@ -155,14 +155,35 @@ const refreshToken = async (OldrefreshToken: string) => {
             },
         });
 
-        return { user:payload,accessToken: accesstoken, refreshToken: refreshtoken };
+        return { user: payload, accessToken: accesstoken, refreshToken: refreshtoken };
     } catch (error) {
         throw new AppError(401, "Invalid refresh token");
     }
 }
 
+
+const resetUserPassword = async (token: string, newPassword: string): Promise<{ message: string }> => {
+
+    const user = await authRepository.findUserByResetToken(token);
+
+    if (!user) {
+        throw new AppError(400, "Invalid or expired password reset token");
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await authRepository.updateUserPassword(user.userId, hashedPassword);
+
+    return { message: "Password reset successful" };
+
+}
+
+
+
+
 export const AuthService = {
     registerUser,
     login,
-    generateToken
+    generateToken,
+    refreshToken
 }
