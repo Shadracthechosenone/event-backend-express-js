@@ -17,7 +17,7 @@ type AuthProps = {
 
 
 type TokenPayload = {
-    userId: number,
+    id: number,
     email?: string
 }
 
@@ -32,7 +32,7 @@ export const generateToken = (payload: TokenPayload) => {
     if (!SECRET_KEY || !REFRESH_KEY) {
         throw new Error("JWT secrets are not properly configured");
     }
-    const accesstoken = jwt.sign(payload, SECRET_KEY, { expiresIn: '1m' })
+    const accesstoken = jwt.sign(payload, SECRET_KEY, { expiresIn: '15m' })
     const refreshtoken = jwt.sign(payload, REFRESH_KEY, { expiresIn: '7d' })
     return { accesstoken, refreshtoken };
 }
@@ -93,7 +93,7 @@ export const login = async (body: { email: string, password: string }): Promise<
     }
 
 
-    const payload: TokenPayload = { userId: existingUser.id, email: existingUser.email };
+    const payload: TokenPayload = { id: existingUser.id, email: existingUser.email };
     const { accesstoken: token, refreshtoken } = generateToken(payload);
 
     // Créer la session en base
@@ -120,6 +120,45 @@ export const login = async (body: { email: string, password: string }): Promise<
 
     };
 
+}
+
+
+
+const refreshToken = async (OldrefreshToken: string) => {
+    const REFRESH_KEY = process.env.JWT_REFRESH_SECRET;
+    if (!REFRESH_KEY) {
+        throw new Error("JWT refresh secret is not defined in environment variables");
+    }
+
+
+    try {
+        const decoded = jwt.verify(OldrefreshToken, REFRESH_KEY) as TokenPayload;
+
+        const session = await db.session.findFirst({
+            where: {
+                refreshToken: OldrefreshToken,
+                expiresAt: { gt: new Date() },
+            },
+        });
+
+        if (!session) {
+            throw new AppError(401, "Invalid refresh token");
+        }
+
+        const payload: TokenPayload = { id: decoded.id, email: decoded.email };
+        const { accesstoken, refreshtoken } = generateToken(payload);
+        await db.session.update({
+            where: { id: session.id },
+            data: {
+                refreshToken: refreshtoken,
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // expire dans 7 jours
+            },
+        });
+
+        return { user:payload,accessToken: accesstoken, refreshToken: refreshtoken };
+    } catch (error) {
+        throw new AppError(401, "Invalid refresh token");
+    }
 }
 
 export const AuthService = {
