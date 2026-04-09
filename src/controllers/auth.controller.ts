@@ -48,10 +48,10 @@ export const signIn = asyncHandler(async (req, res): Promise<void> => {
 
 
 
-    export const authController = {
-        signUp
-        , signIn
+export const authController = {
+    signUp
+    , signIn
 
-    }
+}
 
 

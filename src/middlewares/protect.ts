@@ -11,7 +11,6 @@ const protect = async (
 ): Promise<void> => {
   try {
     const accessToken = req?.get("Authorization")?.split(" ")[1];
-    console.log("accessToken: ", accessToken);
     if (!accessToken) {
       return next(new AppError(401, "Unauthorized, please log in"));
     }
@@ -24,7 +23,7 @@ const protect = async (
       secret
     ) as User;
 
-    console.log("Decoded: ", decoded);
+  
 
     const user = await db.user.findUnique({
       where: { id: decoded.id },

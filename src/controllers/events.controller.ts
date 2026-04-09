@@ -29,32 +29,32 @@ const getEventsByUserId = asyncHandler(async (req, res) => {
 
 
 export const getAllEvents = asyncHandler(async (req, res) => {
-  const {
-    categoryName,
-    status,
-    skip,
-    take,
-    orderBy,
-  } = req.query;
+    const {
+        categoryName,
+        status,
+        skip,
+        take,
+        orderBy,
+    } = req.query;
 
-  const events = await EventService.getEvents({
-    where: {
-      ...(categoryName ? { categoryName: String(categoryName) } : {}),
-      ...(status ? { status: String(status) } : {}),
-    },
-    skip: skip ? parseInt(String(skip)) : 0,
-    take: take ? parseInt(String(take)) : 10,
-    orderBy: orderBy
-      ? { [String(orderBy)]: "desc" }
-      : { createdAt: "desc" },
-  });
+    const events = await EventService.getEvents({
+        where: {
+            ...(categoryName ? { categoryName: String(categoryName) } : {}),
+            ...(status ? { status: String(status) } : {}),
+        },
+        skip: skip ? parseInt(String(skip)) : 0,
+        take: take ? parseInt(String(take)) : 10,
+        orderBy: orderBy
+            ? { [String(orderBy)]: "desc" }
+            : { createdAt: "desc" },
+    });
 
-  sendResponse(res, 200, {
-    message: "Events retrieved successfully",
-    data: {
-      events,
-    },
-  });
+    sendResponse(res, 200, {
+        message: "Events retrieved successfully",
+        data: {
+            events,
+        },
+    });
 });
 
 export const eventcontroller = {
