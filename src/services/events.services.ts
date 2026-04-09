@@ -1,6 +1,9 @@
 
-import { findEventsByUserId } from '@/src/repositories/events.repository.js';
+import { countEvents, findEventsByUserId } from '@/src/repositories/events.repository.js';
 import AppError from "../utils/Apperror.js";
+import { Prisma } from "@prisma/client";
+import {findManyEvents} from "@/src/repositories/events.repository.js";
+import ApiFeatures from '../utils/ApiFeatures.js';
 
 
 interface Event {
@@ -22,6 +25,47 @@ const getEventsByUser = async (userId:number): Promise<Event[]|[]> => {
     return events;
 }
 
+
+
+export const getEvents = async (queryString: Record<string, any>) => {
+  const apiFeatures = new ApiFeatures(queryString)
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate()
+    .build();
+
+  const { where, orderBy, skip, take, select } = apiFeatures;
+
+  const finalWhere: Prisma.EventWhereInput & { categoryName?: string } =
+    where && Object.keys(where).length > 0 ? where : {};
+
+  const totalResults = await countEvents({ where: finalWhere });
+
+  const totalPages = Math.ceil(totalResults / take);
+  const currentPage = Math.floor(skip / take) + 1;
+
+  const events = await findManyEvents({
+    where: finalWhere,
+    orderBy: orderBy || { createdAt: "desc" },
+    skip,
+    take,
+    select,
+  });
+
+  return {
+    events,
+    totalResults,
+    totalPages,
+    currentPage,
+    resultsPerPage: take,
+  };
+};
+
+
+
+
 export const EventService = {
-    getEventsByUser
+    getEventsByUser,
+    getEvents
 }
