@@ -25,11 +25,9 @@ class ApiFeatures {
     // Filtre par catégorie (via le nom puisque EventCategories n'a pas de slug)
     if (this.queryString.categoryName) {
       filters.EventCategories = {
-        is: {
-          name: {
-            equals: this.queryString.categoryName,
-            mode: "insensitive",
-          },
+        name: {
+          equals: this.queryString.categoryName,
+          mode: "insensitive",
         },
       };
       delete queryObj["categoryName"];

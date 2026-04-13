@@ -37,17 +37,9 @@ export const getAllEvents = asyncHandler(async (req, res) => {
         orderBy,
     } = req.query;
 
-    const events = await EventService.getEvents({
-        where: {
-            ...(categoryName ? { categoryName: String(categoryName) } : {}),
-            ...(status ? { status: String(status) } : {}),
-        },
-        skip: skip ? parseInt(String(skip)) : 0,
-        take: take ? parseInt(String(take)) : 10,
-        orderBy: orderBy
-            ? { [String(orderBy)]: "desc" }
-            : { createdAt: "desc" },
-    });
+    const events = await EventService.getEvents(req.query
+      )
+      
 
     console.log(take, skip, orderBy)
     sendResponse(res, 200, {
