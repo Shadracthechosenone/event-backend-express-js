@@ -85,12 +85,13 @@ export const findManyEvents = async (params: {
   const {
     where = {},
     orderBy = { createdAt: "desc" },
-    skip = 0,
-    take = 10,
+    skip ,
+    take ,
     select,
   } = params;
 
   const { categoryName, ...restWhere } = where;
+  console.log("skip, take, orderBy in repository", skip, take, orderBy)
 
   const finalWhere: Prisma.EventWhereInput = {
     ...restWhere,

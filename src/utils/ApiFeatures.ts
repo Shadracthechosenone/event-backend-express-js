@@ -106,10 +106,11 @@ class ApiFeatures {
 
   paginate() {
     const page = Number(this.queryString.page) || 1;
-    const limit = Number(this.queryString.limit) || 10;
-    const skip = (page - 1) * limit;
+    const limit = Number(this.queryString.take) || 10;
+    const skip = Number(this.queryString.skip) || (page - 1) * limit;
     this.queryOptions.skip = skip;
     this.queryOptions.take = limit;
+    this.queryOptions.page = page || { createdAt: "desc" };
     return this;
   }
 

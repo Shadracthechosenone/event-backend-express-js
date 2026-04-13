@@ -49,6 +49,7 @@ export const getAllEvents = asyncHandler(async (req, res) => {
             : { createdAt: "desc" },
     });
 
+    console.log(take, skip, orderBy)
     sendResponse(res, 200, {
         message: "Events retrieved successfully",
         data: {
