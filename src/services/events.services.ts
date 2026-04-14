@@ -1,8 +1,7 @@
 
-import { countEvents, findEventsByUserId } from '@/src/repositories/events.repository.js';
+import { countEvents, findEventsByUserId,findManyEvents } from '@/src/repositories/events.repository.js';
 import AppError from "../utils/Apperror.js";
 import { Prisma } from "@prisma/client";
-import {findManyEvents} from "@/src/repositories/events.repository.js";
 import ApiFeatures from '../utils/ApiFeatures.js';
 
 
