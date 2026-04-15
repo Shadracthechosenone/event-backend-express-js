@@ -1,27 +1,27 @@
 
-import { countEvents, findEventsByUserId,findManyEvents } from '@/src/repositories/events.repository.js';
+import { countEvents, eventsRepository, findEventsByUserId, findManyEvents } from '@/src/repositories/events.repository.js';
 import AppError from "../utils/Apperror.js";
 import { Prisma } from "@prisma/client";
 import ApiFeatures from '../utils/ApiFeatures.js';
 
 
 interface Event {
-    name: string;
-    id: number;
-    description: string | null;
-    date?: Date;
-    userId?: number;
+  name: string;
+  id: number;
+  description: string | null;
+  date?: Date;
+  userId?: number;
 }
 
-const getEventsByUser = async (userId:number): Promise<Event[]|[]> => {
-    // Logic to fetch all events from the 
-    const events = await findEventsByUserId(userId);
+const getEventsByUser = async (userId: number): Promise<Event[] | []> => {
+  // Logic to fetch all events from the 
+  const events = await findEventsByUserId(userId);
 
-        if (!events || events.length === 0) {
-            throw new AppError(404, "No events found");
-        }
-        
-    return events;
+  if (!events || events.length === 0) {
+    throw new AppError(404, "No events found");
+  }
+
+  return events;
 }
 
 
@@ -62,9 +62,51 @@ export const getEvents = async (queryString: Record<string, any>) => {
 };
 
 
+const createEvent = async (data: {
+  name: string;
+  description?: string;
+  userId: number;
+  startAt: Date;
+  endAt: Date;
+  address?: string;
+  latitude: number;
+  longitude: number;
+  eventCategoriesId: number;
+}) => {
+  const event = await eventsRepository.createEvent(data);
+  return event;
+}
+
+
+
+
+
+const deleteEvent = async (id: number) => {
+
+  const event = await eventsRepository.findEventById(id);
+
+  if (!event) {
+    throw new AppError(404, "Event not found");
+  }
+  return await eventsRepository.deleteEvent(id);
+}
+
+
+const getEventbyId = async (id: number) => {
+  const event = await eventsRepository.findEventById(id);
+  if (!event) {
+    throw new AppError(404, "Event not found");
+  }
+  return event;
+}
+
 
 
 export const EventService = {
-    getEventsByUser,
-    getEvents
+  getEventsByUser,
+  getEvents,
+  deleteEvent,
+  createEvent,
+  getEventbyId
+
 }

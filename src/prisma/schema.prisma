@@ -67,8 +67,8 @@ model Event {
   favory            Boolean             @default(false)
   status            EventStatus         @default(ACTIVE)
   user              User                @relation(fields: [userId], references: [id])
-  EventCategories   EventCategories?    @relation(fields: [eventCategoriesId], references: [id])
-  eventCategoriesId Int?
+  EventCategories   EventCategories    @relation(fields: [eventCategoriesId], references: [id])
+  eventCategoriesId Int
   address           String?
   description       String?
   latitude          Float

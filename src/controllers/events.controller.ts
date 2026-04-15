@@ -38,8 +38,8 @@ export const getAllEvents = asyncHandler(async (req, res) => {
     } = req.query;
 
     const events = await EventService.getEvents(req.query
-      )
-      
+    )
+
 
     console.log(take, skip, orderBy)
     sendResponse(res, 200, {
@@ -50,9 +50,75 @@ export const getAllEvents = asyncHandler(async (req, res) => {
     });
 });
 
+const deleteEvent = asyncHandler(async (req, res) => {
+    const eventId = Number(req.params.id);
+
+    if (isNaN(eventId)) {
+        throw new AppError(400, "Invalid event ID");
+    }
+
+    await EventService.deleteEvent(eventId);
+    sendResponse(res, 200, {
+        message: "Event deleted successfully",
+    });
+})
+
+
+const createEvent = asyncHandler(async (req, res) => {
+
+    const {
+        name,
+        description,
+        userId,
+        startAt,
+        endAt,
+        address,
+        latitude,
+        longitude,
+        eventCategoriesId } = req.body;
+
+        const event = await EventService.createEvent({
+            name,
+            description,
+            userId,
+            startAt,
+            endAt,  
+            address,
+            latitude,
+            longitude,
+            eventCategoriesId
+        })
+    sendResponse(res, 201, {
+        message: "Event created successfully",
+        data: {
+            event
+        }
+    })
+
+})
+
+const getEventById = asyncHandler(async (req, res) => {
+    const eventId = Number(req.params.id);
+    if (isNaN(eventId)) {
+        throw new AppError(400, "Invalid event ID");
+    }
+
+    const event = await EventService.getEventbyId(eventId);
+
+    sendResponse(res, 200, {
+        message: "Event retrieved successfully",
+        data: {
+            event
+        }
+    });
+})
+
 export const eventcontroller = {
     getEventsByUserId,
-    getAllEvents
+    getAllEvents,
+    deleteEvent,
+    createEvent,
+    getEventById
 }
 
 

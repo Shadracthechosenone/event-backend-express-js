@@ -8,6 +8,9 @@ const router = Router();
 // Define your routes here
 router.get("/events", protect, eventcontroller.getEventsByUserId);
 router.get("/allevents", protect, eventcontroller.getAllEvents);
+router.delete("/events/:id", protect, eventcontroller.deleteEvent);
+router.post("/events", protect, eventcontroller.createEvent);
+router.get("/events/:id", protect, eventcontroller.getEventById);
 
 export default router;
 

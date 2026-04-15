@@ -163,6 +163,8 @@ export const countEvents = async (params: {
 
 
 const findEventById = async (id: number) => {
+  console.log("Fetching event with ID:", id);
+
   return db.event.findUnique({
     where: {
       id
@@ -172,21 +174,48 @@ const findEventById = async (id: number) => {
 }
 
 
-const createEvent = async (data:
+export const createEvent = async (data:
   {
     name: string;
     description?: string;
     userId: number;
-    address ?: string;
-    startAt ?: Date;
-    endAt ?: Date;
-    eventCategoriesId ?: number;
-    latitude : number ;
-    longitude : number ;
+    address?: string;
+    startAt: Date;
+    endAt: Date;
+    eventCategoriesId?: number;
+    latitude: number;
+    longitude: number;
   }
 ) => {
   return db.event.create({
-    data:data as any   // check the type here and make sure it matches the expected type in your Prisma schema
+    data
+  }
+  )
+}
+
+
+export const createManyEvents = async (data: {
+  name: string;
+  description?: string;
+  userId: number;
+  address?: string;
+  startAt: Date;
+  endAt: Date;
+  eventCategoriesId: number;
+  latitude: number;
+  longitude: number;
+}[]) => {
+  return db.event.createMany({
+    data
+  })
+}
+
+
+export const deleteEvent = async (id: number) => {
+  return db.event.delete({
+    where: {
+      id
+    }
   })
 }
 
@@ -199,6 +228,10 @@ export const eventsRepository = {
   findPastEventsByUserId,
   findUpcomingEventsByUserId,
   findManyEvents,
-  countEvents
+  countEvents,
+  findEventById,
+  createEvent,
+  createManyEvents,
+  deleteEvent
 
 }   
