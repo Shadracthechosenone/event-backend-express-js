@@ -179,6 +179,34 @@ const resetUserPassword = async (token: string, newPassword: string): Promise<{ 
 }
 
 
+ async function signOut(): Promise<{ message: string }> {
+    return { message: "User signed out successfully" };
+}
+
+async function forgotPassword(email: string): Promise<{ message: string }> {
+    const user = await authRepository.findUserByEmail(email);
+
+    if (!user) {
+        throw new AppError(400, "No user found with that email");
+    }
+
+    // Generate a password reset token and save it to the database
+    const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET || "default_secret", { expiresIn: '1h' });
+    const hashedToken = await bcrypt.hash(resetToken, 10);
+
+    await authRepository.updateUserPasswordReset(email, {
+        resetPasswordToken: hashedToken,
+        resetPasswordTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000), // expire dans 1 heure
+    });
+
+    // Send the reset token to the user's email (implementation not shown)
+
+    return { message: "Password reset token sent to email" };
+}
+
+
+
+
 
 
 export const AuthService = {
@@ -187,3 +215,4 @@ export const AuthService = {
     generateToken,
     refreshToken
 }
+
