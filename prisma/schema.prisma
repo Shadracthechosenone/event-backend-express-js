@@ -32,7 +32,7 @@ model Session {
   id           String   @id @default(cuid())
   userId       Int
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  refreshToken String   @unique
+  refreshToken String?   @unique
   userAgent    String? // navigateur / appareil
   ipAddress    String? // IP de connexion
   expiresAt    DateTime // date d'expiration du refresh token

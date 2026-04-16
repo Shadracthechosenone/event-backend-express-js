@@ -46,11 +46,29 @@ export const signIn = asyncHandler(async (req, res): Promise<void> => {
 
 })
 
+const signOut = asyncHandler(async (req, res): Promise<void> => {
+    // Implement sign-out logic if needed (e.g., invalidate tokens)
+    const userId = req.user?.id;
+
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+        res.status(400).json({ error: "Token is required for logout" });
+        
+    }
+
+    
+    sendResponse(res, 200, {
+        message: "Logout successful",
+    });
+})
+
 
 
 export const authController = {
     signUp
     , signIn
+    , signOut
 
 }
 

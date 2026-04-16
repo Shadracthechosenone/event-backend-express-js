@@ -179,7 +179,7 @@ const resetUserPassword = async (token: string, newPassword: string): Promise<{ 
 }
 
 
- async function signOut(): Promise<{ message: string }> {
+async function signOut(): Promise<{ message: string }> {
     return { message: "User signed out successfully" };
 }
 
@@ -213,6 +213,9 @@ export const AuthService = {
     registerUser,
     login,
     generateToken,
-    refreshToken
+    refreshToken,
+    resetUserPassword,
+    forgotPassword,
+    signOut
 }
 

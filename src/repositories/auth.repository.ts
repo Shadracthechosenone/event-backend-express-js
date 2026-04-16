@@ -99,4 +99,11 @@ export const authRepository = {
     });
   },
 
+ /* async invalidateRefreshToken(refreshToken: string) {
+    return db.session.update({
+      where: { refreshToken },
+      data: { refreshToken: null},
+    });
+  }*/
+
 };
