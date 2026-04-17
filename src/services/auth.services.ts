@@ -179,8 +179,11 @@ const resetUserPassword = async (token: string, newPassword: string): Promise<{ 
 }
 
 
-async function signOut(): Promise<{ message: string }> {
+async function signOut(token:string|undefined): Promise<{ message: string }> {
+
+    await authRepository.invalidateRefreshToken(token);
     return { message: "User signed out successfully" };
+
 }
 
 async function forgotPassword(email: string): Promise<{ message: string }> {
@@ -203,6 +206,37 @@ async function forgotPassword(email: string): Promise<{ message: string }> {
 
     return { message: "Password reset token sent to email" };
 }
+
+async function ForgotPassword(email: string): Promise<{ message: string }> {
+    const user = await authRepository.findUserByEmail(email);
+
+    if (!user) {
+      throw new Error("Email");
+    }
+
+   /* const resetToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    await this.authRepository.updateUserPasswordReset(email, {
+      resetPasswordToken: hashedToken,
+      resetPasswordTokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
+
+    const resetUrl = `${process.env.CLIENT_URL}/password-reset/${resetToken}`;
+    const htmlTemplate = passwordResetTemplate(resetUrl);
+
+    await sendEmail({
+      to: user.email,
+      subject: "Reset your password",
+      html: htmlTemplate,
+      text: "Reset your password",
+    });*/
+
+    return { message: "Password reset email sent successfully" };
+  }
 
 
 

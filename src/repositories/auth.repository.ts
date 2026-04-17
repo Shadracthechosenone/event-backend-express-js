@@ -99,11 +99,16 @@ export const authRepository = {
     });
   },
 
- /* async invalidateRefreshToken(refreshToken: string) {
+ async invalidateRefreshToken(refreshToken: string|undefined) {
+
+  if (!refreshToken) {
+    throw new Error("Refresh token is required for logout");
+  }
+  
     return db.session.update({
       where: { refreshToken },
       data: { refreshToken: null},
-    });
-  }*/
+    }); 
+  }
 
 };

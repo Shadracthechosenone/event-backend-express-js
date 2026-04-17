@@ -57,6 +57,8 @@ const signOut = asyncHandler(async (req, res): Promise<void> => {
         
     }
 
+    await AuthService.signOut(token);
+
     
     sendResponse(res, 200, {
         message: "Logout successful",
