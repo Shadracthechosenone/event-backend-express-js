@@ -6,8 +6,9 @@ import { authRepository } from "../repositories/auth.repository.js";
 import { ROLE } from "@prisma/client";
 import BadRequestError from "../utils/BadRequestError.js";
 import AppError from "../utils/Apperror.js";
-
-
+import sendEmail from "../utils/sendEmail.js";
+import passwordResetTemplate from "../shared/templats/passwordReset.js";
+import crypto from "crypto";
 
 type AuthProps = {
     name: string
@@ -179,7 +180,7 @@ const resetUserPassword = async (token: string, newPassword: string): Promise<{ 
 }
 
 
-async function signOut(token:string|undefined): Promise<{ message: string }> {
+async function signOut(token: string | undefined): Promise<{ message: string }> {
 
     await authRepository.invalidateRefreshToken(token);
     return { message: "User signed out successfully" };
@@ -211,23 +212,22 @@ async function ForgotPassword(email: string): Promise<{ message: string }> {
     const user = await authRepository.findUserByEmail(email);
 
     if (!user) {
-      throw new Error("Email");
+        throw new Error("Email");
     }
 
+    const resetToken = crypto.randomBytes(32).toString("hex");
 
-   /* 
+    const htmlTemplate = passwordResetTemplate(resetToken);
 
     await sendEmail({
-      to: user.email,
-      subject: "Reset your password",
-      html: htmlTemplate,
-      text: "Reset your password",
-    });*/
+        to: user.email,
+        subject: "Reset your password",
+        html: htmlTemplate,
+        text: "Reset your password",
+    });
 
     return { message: "Password reset email sent successfully" };
-  }
-
-
+}
 
 
 
@@ -239,6 +239,7 @@ export const AuthService = {
     refreshToken,
     resetUserPassword,
     forgotPassword,
-    signOut
+    signOut,
+    ForgotPassword
 }
 

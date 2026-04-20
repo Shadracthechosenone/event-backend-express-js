@@ -54,23 +54,36 @@ const signOut = asyncHandler(async (req, res): Promise<void> => {
 
     if (!token) {
         res.status(400).json({ error: "Token is required for logout" });
-        
+
     }
 
     await AuthService.signOut(token);
 
-    
+
     sendResponse(res, 200, {
         message: "Logout successful",
     });
 })
 
+const forgotPassword = asyncHandler(
+  async (req, res): Promise<void> => {
+    const { email } = req.body;
+    
+    const start = Date.now();
+    const response = await AuthService.ForgotPassword(email);
+    const end = Date.now();
+    
+    console.log(`Time taken for forgot password: ${end - start} ms`);
+    sendResponse(res, 200, { message: response.message });
+  }
+);
 
 
 export const authController = {
     signUp
     , signIn
-    , signOut
+    , signOut,
+    forgotPassword
 
 }
 
