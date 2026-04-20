@@ -214,19 +214,8 @@ async function ForgotPassword(email: string): Promise<{ message: string }> {
       throw new Error("Email");
     }
 
-   /* const resetToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
 
-    await this.authRepository.updateUserPasswordReset(email, {
-      resetPasswordToken: hashedToken,
-      resetPasswordTokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
-    });
-
-    const resetUrl = `${process.env.CLIENT_URL}/password-reset/${resetToken}`;
-    const htmlTemplate = passwordResetTemplate(resetUrl);
+   /* 
 
     await sendEmail({
       to: user.email,
