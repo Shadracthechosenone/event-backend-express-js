@@ -18,7 +18,7 @@ type AuthProps = {
 
 
 type TokenPayload = {
-    id: number,
+    id: string,
     email?: string
 }
 
@@ -199,8 +199,8 @@ async function forgotPassword(email: string): Promise<{ message: string }> {
     const hashedToken = await bcrypt.hash(resetToken, 10);
 
     await authRepository.updateUserPasswordReset(email, {
-        resetPasswordToken: hashedToken,
-        resetPasswordTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000), // expire dans 1 heure
+        tokenHash: hashedToken,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // expire dans 1 heure
     });
 
     // Send the reset token to the user's email (implementation not shown)
@@ -217,7 +217,19 @@ async function ForgotPassword(email: string): Promise<{ message: string }> {
 
     const resetToken = crypto.randomBytes(32).toString("hex");
 
-    const htmlTemplate = passwordResetTemplate(resetToken);
+    const token = await jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET || "default_secret", { expiresIn: '7d' });
+
+     const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    await authRepository.updateUserPasswordReset(email, {
+        tokenHash: hashedToken,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
+
+    const htmlTemplate = passwordResetTemplate(token);
 
     await sendEmail({
         to: user.email,

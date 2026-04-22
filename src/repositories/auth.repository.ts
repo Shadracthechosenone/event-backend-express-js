@@ -1,6 +1,6 @@
 // auth.repository.ts
 import { ROLE } from "@prisma/client";
-import {db} from "@/src/utils/db.js";
+import { db } from "@/src/utils/db.js";
 
 export const authRepository = {
   async findUserByEmail(email: string) {
@@ -12,7 +12,7 @@ export const authRepository = {
   async findUserByEmailWithPassword(email: string) {
     return db.user.findUnique({
       where: { email },
-      
+
       select: {
         id: true,
         password: true,
@@ -23,7 +23,7 @@ export const authRepository = {
     });
   },
 
-  async findUserById(id: number) {
+  async findUserById(id: string) {
     return db.user.findUnique({
       where: { id },
       select: {
@@ -53,7 +53,7 @@ export const authRepository = {
   },
 
   async updateUserEmailVerification(
-    userId: number,
+    userId: string,
     data: {
       emailVerificationToken: string | null;
       emailVerificationTokenExpiresAt: Date | null;
@@ -69,14 +69,22 @@ export const authRepository = {
   async updateUserPasswordReset(
     email: string,
     data: {
-      resetPasswordToken?: string | null;
-      resetPasswordTokenExpiresAt?: Date | null;
-      password?: string;
+      tokenHash?: string ;
+      expiresAt?: Date;
+      used?: boolean;
+
     }
   ) {
-    return db.user.update({
-      where: { email },
-      data,
+
+    const user = await authRepository.findUserByEmail(email)
+    const userId = user?.id;
+    if (!userId) {
+      throw new Error("User not found with the provided email");
+    } // check here after
+
+    return db.passwordResetToken.update({
+      where: {userId },
+      data
     });
   },
 
@@ -89,26 +97,26 @@ export const authRepository = {
     });
   },
 
-  async updateUserPassword(userId: number, password: string) {
+  async updateUserPassword(userId: string, password: string) {
     return db.user.update({
       where: { id: userId },
       data: {
         password,
-       
+
       },
     });
   },
 
- async invalidateRefreshToken(refreshToken: string|undefined) {
+  async invalidateRefreshToken(refreshToken: string | undefined) {
 
-  if (!refreshToken) {
-    throw new Error("Refresh token is required for logout");
-  }
-  
+    if (!refreshToken) {
+      throw new Error("Refresh token is required for logout");
+    }
+
     return db.session.update({
       where: { refreshToken },
-      data: { refreshToken: null},
-    }); 
+      data: { refreshToken: null },
+    });
   }
 
 };

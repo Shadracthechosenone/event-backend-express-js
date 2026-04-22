@@ -79,11 +79,33 @@ const forgotPassword = asyncHandler(
 );
 
 
+const resetPassword = asyncHandler(
+  async (req, res): Promise<void> => {
+    const { token } = req.query;
+    const { newPassword } = req.body;   
+    if (typeof token !== "string") {
+      res.status(400).json({ error: "Invalid token" });
+      return ;
+    }
+
+
+    
+    const start = Date.now();
+    const response = await AuthService.resetUserPassword(token, newPassword);
+    const end = Date.now();
+
+    console.log(`Time taken for reset password: ${end - start} ms`);
+
+    sendResponse(res, 200, { message: response.message });
+  }
+);
+
 export const authController = {
     signUp
     , signIn
     , signOut,
-    forgotPassword
+    forgotPassword,
+    resetPassword
 
 }
 
