@@ -219,10 +219,10 @@ async function ForgotPassword(email: string): Promise<{ message: string }> {
 
     const token = await jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET || "default_secret", { expiresIn: '7d' });
 
-     const hashedToken = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
+    const hashedToken = crypto
+        .createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
 
     await authRepository.updateUserPasswordReset(email, {
         tokenHash: hashedToken,

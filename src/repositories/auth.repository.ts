@@ -69,22 +69,24 @@ export const authRepository = {
   async updateUserPasswordReset(
     email: string,
     data: {
-      tokenHash?: string ;
-      expiresAt?: Date;
+      tokenHash: string ;
+      expiresAt: Date;
       used?: boolean;
 
     }
   ) {
-
     const user = await authRepository.findUserByEmail(email)
     const userId = user?.id;
+    console.log("User ID for password reset:", userId); // Debug log
     if (!userId) {
       throw new Error("User not found with the provided email");
     } // check here after
 
-    return db.passwordResetToken.update({
-      where: {userId },
-      data
+    return db.passwordResetToken.create({
+      data:{
+        ...data,
+        userId,
+      }
     });
   },
 
