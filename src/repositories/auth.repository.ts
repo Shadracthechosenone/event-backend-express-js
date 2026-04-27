@@ -66,10 +66,18 @@ export const authRepository = {
     });
   },
 
+  async findUserByToken(token: string) {
+    return db.passwordResetToken.findFirst({
+      where: {
+        tokenHash: token
+      },
+    });
+  },
+
   async updateUserPasswordReset(
     email: string,
     data: {
-      tokenHash: string ;
+      tokenHash: string;
       expiresAt: Date;
       used?: boolean;
 
@@ -82,18 +90,23 @@ export const authRepository = {
       throw new Error("User not found with the provided email");
     } // check here after
 
-    return db.passwordResetToken.create({
-      data:{
+
+    return db.passwordResetToken.upsert({
+      where: { userId },
+      create: {
         ...data,
         userId,
+      },
+      update: {
+        ...data
       }
     });
   },
 
   async findUserByResetToken(hashedToken: string) {
-    return db.session.findFirst({
+    return db.passwordResetToken.findFirst({
       where: {
-        refreshToken: hashedToken,
+        tokenHash: hashedToken,
         expiresAt: { gt: new Date() },
       },
     });

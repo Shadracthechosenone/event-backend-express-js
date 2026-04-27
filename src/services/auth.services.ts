@@ -5,7 +5,7 @@ import { db } from "@/src/utils/db.js";
 import { authRepository } from "../repositories/auth.repository.js";
 import { ROLE } from "@prisma/client";
 import BadRequestError from "../utils/BadRequestError.js";
-import AppError from "../utils/Apperror.js";
+import AppError from "../utils/AppError.js";
 import sendEmail from "../utils/sendEmail.js";
 import passwordResetTemplate from "../shared/templats/passwordReset.js";
 import crypto from "crypto";
@@ -198,11 +198,14 @@ async function forgotPassword(email: string): Promise<{ message: string }> {
     const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET || "default_secret", { expiresIn: '1h' });
     const hashedToken = await bcrypt.hash(resetToken, 10);
 
-    await authRepository.updateUserPasswordReset(email, {
+    const newPassword = await authRepository.updateUserPasswordReset(email, {
         tokenHash: hashedToken,
         expiresAt: new Date(Date.now() + 60 * 60 * 1000), // expire dans 1 heure
     });
 
+    if (!newPassword) {
+        throw new BadRequestError("Failed to generate password reset token");
+    }
     // Send the reset token to the user's email (implementation not shown)
 
     return { message: "Password reset token sent to email" };
@@ -217,8 +220,6 @@ async function ForgotPassword(email: string): Promise<{ message: string }> {
 
     const resetToken = crypto.randomBytes(32).toString("hex");
 
-    const token = await jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET || "default_secret", { expiresIn: '7d' });
-
     const hashedToken = crypto
         .createHash("sha256")
         .update(resetToken)
@@ -229,7 +230,7 @@ async function ForgotPassword(email: string): Promise<{ message: string }> {
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    const htmlTemplate = passwordResetTemplate(token);
+    const htmlTemplate = passwordResetTemplate(hashedToken);
 
     await sendEmail({
         to: user.email,
