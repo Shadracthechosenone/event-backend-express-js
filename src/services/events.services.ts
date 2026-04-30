@@ -1,19 +1,19 @@
 
 import { countEvents, eventsRepository, findEventsByUserId, findManyEvents } from '@/src/repositories/events.repository.js';
-import AppError from "../utils/Apperror.js";
+import AppError from "../utils/AppError.js";
 import { Prisma } from "@prisma/client";
 import ApiFeatures from '../utils/ApiFeatures.js';
 
 
 interface Event {
   name: string;
-  id: number;
+  id: string;
   description: string | null;
   date?: Date;
-  userId?: number;
+  userId?: string;
 }
 
-const getEventsByUser = async (userId: number): Promise<Event[] | []> => {
+const getEventsByUser = async (userId: string): Promise<Event[] | []> => {
   // Logic to fetch all events from the 
   const events = await findEventsByUserId(userId);
 
@@ -65,7 +65,7 @@ export const getEvents = async (queryString: Record<string, any>) => {
 const createEvent = async (data: {
   name: string;
   description?: string;
-  userId: number;
+  userId: string;
   startAt: Date;
   endAt: Date;
   address?: string;
@@ -81,7 +81,7 @@ const createEvent = async (data: {
 
 
 
-const deleteEvent = async (id: number) => {
+const deleteEvent = async (id: string) => {
 
   const event = await eventsRepository.findEventById(id);
 
@@ -92,7 +92,7 @@ const deleteEvent = async (id: number) => {
 }
 
 
-const getEventbyId = async (id: number) => {
+const getEventbyId = async (id: string) => {
   const event = await eventsRepository.findEventById(id);
   if (!event) {
     throw new AppError(404, "Event not found");

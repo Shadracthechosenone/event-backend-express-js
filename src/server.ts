@@ -2,6 +2,7 @@
 import 'dotenv/config'; // ← chargé ici avant tout
 import express from "express";
 import { configureRoutes } from "./routes/index.js";
+import { globalErrorHandler } from "./utils/GlobalErrorHandler.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,6 +10,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use("/api", configureRoutes());
 
+app.use(globalErrorHandler); // Middleware de gestion des erreurs globales
 app.listen(PORT, () => {
   console.log(`Serveur lancé sur le port ${PORT}`);
 });

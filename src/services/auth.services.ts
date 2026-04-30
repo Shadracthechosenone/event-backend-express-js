@@ -215,7 +215,7 @@ async function ForgotPassword(email: string): Promise<{ message: string }> {
     const user = await authRepository.findUserByEmail(email);
 
     if (!user) {
-        throw new Error("Email");
+        return { message: "Password reset email sent successfully" };
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");

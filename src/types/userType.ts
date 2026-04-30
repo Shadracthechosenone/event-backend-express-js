@@ -6,7 +6,7 @@ export enum Role {
 }
 
 export interface User {
-    id: number,
+    id: string,
     name: string,
     email: string,
     role?: Role,
@@ -20,7 +20,7 @@ declare global {
     namespace Express {
         interface Request {
             user?: {
-                id: number;
+                id: string;
                 role: string;
             };
         }

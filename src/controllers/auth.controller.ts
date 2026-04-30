@@ -23,32 +23,38 @@ const signUp = asyncHandler(async (req, res): Promise<void> => {
     })
 })
 
-export const signIn = asyncHandler(async (req, res): Promise<void> => {
-    const { email, password } = req.body;
+export const signIn = asyncHandler(async (req, res, next): Promise<void> => {
 
-    const result = await AuthService.login({ email, password });
+    try {
 
+        const { email, password } = req.body;
 
-    if (!result?.user) {
-        res.status(400).json({ error: "Login failed" });
-        return;
-    }
+        const result = await AuthService.login({ email, password });
 
 
-    sendResponse(res, 200, {
-        message: "Login successful",
-
-        data: {
-            accessToken: result.accessToken,
-            refreshToken: result.refreshToken,
+        if (!result?.user) {
+            res.status(400).json({ error: "Login failed" });
+            return;
         }
-    })
+
+
+        sendResponse(res, 200, {
+            message: "Login successful",
+
+            data: {
+                accessToken: result.accessToken,
+                refreshToken: result.refreshToken,
+            }
+        })
+    } catch (error) {
+        next(error);
+    }
 
 })
 
 const signOut = asyncHandler(async (req, res): Promise<void> => {
     // Implement sign-out logic if needed (e.g., invalidate tokens)
-    const userId = req.user?.id;
+    //const userId = req.user?.id;
 
     const token = req.headers.authorization?.split(" ")[1];
 
@@ -66,38 +72,38 @@ const signOut = asyncHandler(async (req, res): Promise<void> => {
 })
 
 const forgotPassword = asyncHandler(
-  async (req, res): Promise<void> => {
-    const { email } = req.body;
-    
-    const start = Date.now();
-    const response = await AuthService.ForgotPassword(email);
-    const end = Date.now();
-    
-    console.log(`Time taken for forgot password: ${end - start} ms`);
-    sendResponse(res, 200, { message: response.message });
-  }
+    async (req, res): Promise<void> => {
+        const { email } = req.body;
+
+        const start = Date.now();
+        const response = await AuthService.ForgotPassword(email);
+        const end = Date.now();
+
+        console.log(`Time taken for forgot password: ${end - start} ms`);
+        sendResponse(res, 200, { message: response.message });
+    }
 );
 
 
 const resetPassword = asyncHandler(
-  async (req, res): Promise<void> => {
-    const { token } = req.query;
-    const { newPassword } = req.body;   
-    if (typeof token !== "string") {
-      res.status(400).json({ error: "Invalid token" });
-      return ;
+    async (req, res): Promise<void> => {
+        const { token } = req.query;
+        const { newPassword } = req.body;
+        if (typeof token !== "string") {
+            res.status(400).json({ error: "Invalid token" });
+            return;
+        }
+
+
+
+        const start = Date.now();
+        const response = await AuthService.resetUserPassword(token, newPassword);
+        const end = Date.now();
+
+        console.log(`Time taken for reset password: ${end - start} ms`);
+
+        sendResponse(res, 200, { message: response.message });
     }
-
-
-    
-    const start = Date.now();
-    const response = await AuthService.resetUserPassword(token, newPassword);
-    const end = Date.now();
-
-    console.log(`Time taken for reset password: ${end - start} ms`);
-
-    sendResponse(res, 200, { message: response.message });
-  }
 );
 
 export const authController = {

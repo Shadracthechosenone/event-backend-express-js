@@ -16,7 +16,7 @@ const findAllEvents = () => {
 
 }
 
-export const findEventsByUserId = (id: number) => {
+export const findEventsByUserId = (id: string) => {
 
   const events = db.event.findMany({
     where: {
@@ -32,7 +32,7 @@ export const findEventsByUserId = (id: number) => {
   return events;
 }
 
-const findPastEventsByUserId = (id: number) => {
+const findPastEventsByUserId = (id: string) => {
 
   const events = db.event.findMany({
     where: {
@@ -51,7 +51,7 @@ const findPastEventsByUserId = (id: number) => {
 }
 
 
-const findUpcomingEventsByUserId = async (id: number) => {
+const findUpcomingEventsByUserId = async (id: string) => {
 
   const events = db.event.findMany({
     where: {
@@ -162,7 +162,7 @@ export const countEvents = async (params: {
 };
 
 
-const findEventById = async (id: number) => {
+const findEventById = async (id: string) => {
   console.log("Fetching event with ID:", id);
 
   return db.event.findUnique({
@@ -178,11 +178,11 @@ export const createEvent = async (data:
   {
     name: string;
     description?: string;
-    userId: number;
+    userId: string;
     address?: string;
     startAt: Date;
     endAt: Date;
-    eventCategoriesId?: number;
+    eventCategoriesId: number;
     latitude: number;
     longitude: number;
   }
@@ -197,7 +197,7 @@ export const createEvent = async (data:
 export const createManyEvents = async (data: {
   name: string;
   description?: string;
-  userId: number;
+  userId: string;
   address?: string;
   startAt: Date;
   endAt: Date;
@@ -211,7 +211,7 @@ export const createManyEvents = async (data: {
 }
 
 
-export const deleteEvent = async (id: number) => {
+export const deleteEvent = async (id: string) => {
   return db.event.delete({
     where: {
       id

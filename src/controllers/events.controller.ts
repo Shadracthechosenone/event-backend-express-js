@@ -1,6 +1,6 @@
 import { EventService } from "../services/events.services.js"
 import sendResponse from "../utils/sendResponse.js";
-import AppError from '../utils/Apperror.js';
+import AppError from '../utils/AppError.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
 
@@ -51,9 +51,9 @@ export const getAllEvents = asyncHandler(async (req, res) => {
 });
 
 const deleteEvent = asyncHandler(async (req, res) => {
-    const eventId = Number(req.params.id);
+    const eventId = req.params.id;
 
-    if (isNaN(eventId)) {
+    if (typeof eventId !== "string" ) {
         throw new AppError(400, "Invalid event ID");
     }
 
@@ -64,11 +64,15 @@ const deleteEvent = asyncHandler(async (req, res) => {
 })
 
 
-const createEvent = asyncHandler(async (req, res) => {
+const createEvent = asyncHandler(async (req, res,next) => {
 
-    const {
-        name,
-        description,
+    // ajouter catch pour passer les erreurs a global error handler
+    try{
+
+        
+        const {
+            name,
+            description,
         userId,
         startAt,
         endAt,
@@ -94,12 +98,15 @@ const createEvent = asyncHandler(async (req, res) => {
             event
         }
     })
+}catch(error){
+    next(error);
+}
 
 })
 
 const getEventById = asyncHandler(async (req, res) => {
-    const eventId = Number(req.params.id);
-    if (isNaN(eventId)) {
+    const eventId = req.params.id;
+    if (typeof eventId !== "string") {
         throw new AppError(400, "Invalid event ID");
     }
 

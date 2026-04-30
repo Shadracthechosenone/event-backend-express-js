@@ -3,7 +3,7 @@ export type ErrorDetail = {
   constraints?: Record<string, string>;
 };
 
-class AppError extends Error {
+export class AppError extends Error {
   public statusCode: number;
   public success: boolean;
   public isOperational: boolean;

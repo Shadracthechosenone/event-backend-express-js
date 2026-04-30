@@ -13,3 +13,4 @@ export const configureV1Routes = () => {
   
   return router;
 };
+
