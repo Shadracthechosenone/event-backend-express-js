@@ -53,7 +53,7 @@ export const getAllEvents = asyncHandler(async (req, res) => {
 const deleteEvent = asyncHandler(async (req, res) => {
     const eventId = req.params.id;
 
-    if (typeof eventId !== "string" ) {
+    if (typeof eventId !== "string") {
         throw new AppError(400, "Invalid event ID");
     }
 
@@ -64,43 +64,43 @@ const deleteEvent = asyncHandler(async (req, res) => {
 })
 
 
-const createEvent = asyncHandler(async (req, res,next) => {
+const createEvent = asyncHandler(async (req, res, next) => {
 
     // ajouter catch pour passer les erreurs a global error handler
-    try{
+    try {
 
-        
+
         const {
             name,
             description,
-        userId,
-        startAt,
-        endAt,
-        address,
-        latitude,
-        longitude,
-        eventCategoriesId } = req.body;
+            userId,
+            startAt,
+            endAt,
+            address,
+            latitude,
+            longitude,
+            eventCategoriesId } = req.body;
 
         const event = await EventService.createEvent({
             name,
             description,
             userId,
             startAt,
-            endAt,  
+            endAt,
             address,
             latitude,
             longitude,
             eventCategoriesId
         })
-    sendResponse(res, 201, {
-        message: "Event created successfully",
-        data: {
-            event
-        }
-    })
-}catch(error){
-    next(error);
-}
+        sendResponse(res, 201, {
+            message: "Event created successfully",
+            data: {
+                event
+            }
+        })
+    } catch (error) {
+        next(error);
+    }
 
 })
 
