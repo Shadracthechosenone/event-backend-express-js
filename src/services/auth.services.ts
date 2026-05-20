@@ -242,6 +242,17 @@ async function ForgotPassword(email: string): Promise<{ message: string }> {
     return { message: "Password reset email sent successfully" };
 }
 
+async function findUserByResetToken(token: string): Promise<{ userId: string } | { message: string }> {
+    const tokenfound = await authRepository.findUserByRefreshToken(token);
+
+    if (!tokenfound) {
+        return { message: "Invalid or expired password reset token" };
+    }
+
+console.log("Token found for user ID:", tokenfound); // Debug log
+    return { userId: tokenfound.userId };
+}
+
 
 
 
@@ -253,6 +264,7 @@ export const AuthService = {
     resetUserPassword,
     forgotPassword,
     signOut,
-    ForgotPassword
+    ForgotPassword,
+    findUserByResetToken
 }
 

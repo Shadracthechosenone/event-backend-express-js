@@ -106,12 +106,44 @@ const resetPassword = asyncHandler(
     }
 );
 
+const refreshToken = asyncHandler(async (req, res): Promise<void> => {
+
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+        res.status(400).json({ error: "Refresh token is required" });
+        return;
+    }
+
+    const tokenchecked = await AuthService.findUserByResetToken(refreshToken);
+
+    if (!tokenchecked) {
+        res.status(401).json({ error: "Invalid refresh token" });
+        return;
+    }
+
+    try {
+        const result = await AuthService.refreshToken(refreshToken);
+
+        sendResponse(res, 200, {
+            message: "Access token refreshed successfully",
+            data: {
+                accessToken: result.accessToken,
+                refreshToken: result.refreshToken,
+            }
+        })
+    } catch (error) {
+        res.status(401).json({ error: "Invalid refresh token" });
+    }
+});
+
 export const authController = {
     signUp
     , signIn
     , signOut,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    refreshToken
 
 }
 

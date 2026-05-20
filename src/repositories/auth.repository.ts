@@ -132,6 +132,15 @@ export const authRepository = {
       where: { refreshToken },
       data: { refreshToken: null },
     });
+  },
+
+  async findUserByRefreshToken(refreshToken: string) {
+    return db.session.findFirst({
+      where: { refreshToken },
+      include: {
+        user: true,
+      },
+    });
   }
 
 };

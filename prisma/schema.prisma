@@ -7,89 +7,98 @@ datasource db {
   provider = "postgresql"
 }
 
+// ENUMS
+
 enum ROLE {
   ADMIN
   USER
   SUPERADMIN
 }
 
-model User {
-  id                String                 @id @default(uuid())
-  name              String
-  email             String              @unique
-  phone             String?
-  photo             String?
-  password          String
-  role              ROLE                @default(USER)
-  events            Event[]
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  EventParticipants EventParticipants[]
-  Session           Session[]
-  PasswordResetToken PasswordResetToken[]
+enum EventStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  COMPLETED
 }
+
+enum TicketStatus {
+  PENDING // en attente de paiement
+  CONFIRMED // paiement confirmé
+  CANCELLED // annulé
+  REFUNDED // remboursé
+  USED // scanné à l'entrée
+}
+
+enum ParticipantStatus {
+  REGISTERED // inscrit (événement gratuit)
+  CONFIRMED // paiement confirmé
+  CANCELLED // annulé
+  PRESENT // présent physiquement (après scan QR)
+}
+
+enum NotificationType {
+  TICKET_CONFIRMED
+  EVENT_CANCELLED
+  EVENT_REMINDER
+  NEW_PARTICIPANT
+  PAYMENT_FAILED
+}
+
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CINETPAY
+  ORANGE_MONEY
+  MTN_MONEY
+  WAVE
+  STRIPE
+  FREE        // pour les événements gratuits
+}
+
+// USER
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  photo     String?
+  password  String
+  role      ROLE     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  events              Event[] // événements créés
+  sessions            Session[]
+  tickets             Ticket[] // billets achetés
+  participations      EventParticipant[] // participations confirmées
+  notifications       Notification[]
+  reviews             Review[]
+  passwordResetTokens PasswordResetToken[]
+  payments             Payment[]
+}
+
+// SESSION / AUTH
 
 model Session {
   id           String   @id @default(uuid())
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  refreshToken String?   @unique
-  userAgent    String? // navigateur / appareil
-  ipAddress    String? // IP de connexion
-  expiresAt    DateTime // date d'expiration du refresh token
+  refreshToken String?  @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
-
-model EventCategories {
-  id     Int     @id @default(autoincrement())
-  name   String
-  events Event[]
-}
-
-enum EventStatus {
-  ACTIVE
-  INACTIVE
-}
-
-model Images {
-  id        Int      @id @default(autoincrement())
-  url       String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Event {
-  id                String                 @id @default(uuid())
-  name              String
-  startAt           DateTime
-  endAt             DateTime
-  userId            String
-  favory            Boolean             @default(false)
-  status            EventStatus         @default(ACTIVE)
-  user              User                @relation(fields: [userId], references: [id])
-  EventCategories   EventCategories    @relation(fields: [eventCategoriesId], references: [id])
-  eventCategoriesId Int
-  address           String?
-  description       String?
-  latitude          Float
-  longitude         Float
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  Images            Json?               @default("[]")
-  EventParticipants EventParticipants[]
-}
-
-model EventParticipants {
-  id        String      @id @default(uuid())
-  eventId   String
-  userId    String
-  event     Event    @relation(fields: [eventId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 
 model PasswordResetToken {
   id        String   @id @default(cuid())
@@ -98,5 +107,148 @@ model PasswordResetToken {
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ÉVÉNEMENT
+
+model EventCategory {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  events Event[]
+}
+
+model Event {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  address     String?
+  latitude    Float
+  longitude   Float
+  startAt     DateTime
+  endAt       DateTime
+  status      EventStatus @default(ACTIVE)
+  isFree      Boolean     @default(false)
+  ticketPrice Float       @default(0) // ignoré si isFree = true
+  maxCapacity Int? // null = illimité
+  categoryId  Int
+  userId      String // organisateur
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  category      EventCategory      @relation(fields: [categoryId], references: [id])
+  organizer     User               @relation(fields: [userId], references: [id])
+  images        EventImage[]
+  tickets       Ticket[]
+  participants  EventParticipant[]
+  reviews       Review[]
+  notifications Notification[]
+  Payments       Payment[]
+}
+
+model EventImage {
+  id        Int      @id @default(autoincrement())
+  eventId   String
+  url       String
+  isPrimary Boolean  @default(false)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+// TICKET (réservation + paiement)
+
+model Ticket {
+  id        String       @id @default(uuid())
+  eventId   String
+  userId    String
+  price     Float // 0 si gratuit
+  quantity  Int          @default(1)
+  status    TicketStatus @default(PENDING)
+  qrCode    String?      @unique // généré après confirmation
+  paymentId String? // référence CinetPay / Stripe
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  // Relations
+  event       Event             @relation(fields: [eventId], references: [id])
+  user        User              @relation(fields: [userId], references: [id])
+  participant EventParticipant? // créé automatiquement après confirmation
+}
+
+// PARTICIPANT (présence confirmée à l'événement)
+
+model EventParticipant {
+  id          String            @id @default(uuid())
+  eventId     String
+  userId      String
+  ticketId    String?           @unique // null si événement gratuit
+  status      ParticipantStatus @default(REGISTERED)
+  checkedIn   Boolean           @default(false) // a scanné son QR à l'entrée
+  checkedInAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticket Ticket? @relation(fields: [ticketId], references: [id])
+
+  @@unique([eventId, userId]) // un user = une participation par événement
+}
+
+// REVIEW
+
+model Review {
+  id        String   @id @default(uuid())
+  eventId   String
+  userId    String
+  rating    Int // 1 à 5
+  comment   String?
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId]) // un seul avis par user par événement
+}
+
+// NOTIFICATION
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  eventId   String? // optionnel, pour lier à un événement précis
+  type      NotificationType
+  title     String
+  body      String
+  read      Boolean          @default(false)
+  data      Json? // metadata libre (ticketId, etc.)
+  createdAt DateTime         @default(now())
+
+  user  User   @relation(fields: [userId], references: [id])
+  event Event? @relation(fields: [eventId], references: [id])
+}
+
+
+
+model Payment {
+  id              String        @id @default(uuid())
+  ticketId        String        @unique   // 1 ticket = 1 paiement
+  userId          String
+  amount          Float
+  eventId         String
+  currency        String        @default("XOF")  // Franc CFA
+  status          PaymentStatus @default(PENDING)
+  method          PaymentMethod
+  transactionRef  String?       @unique   // référence retournée par CinetPay/Wave...
+  failureReason   String?       // message d'erreur si FAILED
+  paidAt          DateTime?     // null tant que pas confirmé
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+ // ticket          Ticket        @relation(fields: [ticketId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
+  event          Event         @relation(fields: [eventId], references: [id], onDelete: Cascade) // pour faciliter les notifications liées au paiement
 }
