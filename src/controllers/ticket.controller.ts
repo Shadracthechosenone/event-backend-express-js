@@ -1,4 +1,4 @@
-import { ticketService } from "../services/ticket.services.js"
+import { TicketService } from "../services/ticket.services.js"
 import sendResponse from "../utils/sendResponse.js";
 import AppError from '../utils/AppError.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -11,7 +11,7 @@ const getTicketsByUserId = asyncHandler(async (req, res) => {
     if (!userId) {
         throw new AppError(401, "Unauthorized, please log in");
     }
-    const tickets = await ticketService.findTicketsByUserId(userId);
+    const tickets = await TicketService.getTicketsByUser(userId);
 
     sendResponse(res, 200, {
         message: "Tickets retrieved successfully",
@@ -29,7 +29,7 @@ const deleteTicket = asyncHandler(async (req, res) => {
         throw new AppError(400, "Invalid ticket ID");
     }
 
-    await ticketService.deleteTicket(ticketId);
+    await TicketService.deleteTicket(ticketId);
     sendResponse(res, 200, {
         message: "Ticket deleted successfully",
     });
@@ -54,7 +54,7 @@ const createTicket = asyncHandler(async (req, res, next) => {
             updatedAt
         } = req.body;
 
-        const ticket = await ticketService.createTicket({
+        const ticket = await TicketService.createTicket({
             eventId,
             userId,
             price,
@@ -84,7 +84,7 @@ const getTicketById = asyncHandler(async (req, res) => {
         throw new AppError(400, "Invalid ticket ID");
     }
 
-    const ticket = await ticketService.getTicketById(ticketId);
+    const ticket = await TicketService.getTicketById(ticketId);
 
     sendResponse(res, 200, {
         message: "Ticket retrieved successfully",
