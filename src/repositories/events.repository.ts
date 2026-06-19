@@ -97,7 +97,7 @@ export const findManyEvents = async (params: {
     ...restWhere,
     ...(categoryName
       ? {
-        EventCategories: {
+        category: {
           is: {
             name: {
               equals: categoryName,
@@ -120,15 +120,15 @@ export const findManyEvents = async (params: {
     queryOptions.select = select;
   } else {
     queryOptions.include = {
-      user: {
+      organizer: {
         select: {
           id: true,
           name: true,
           email: true,
         },
       },
-      EventCategories: true,
-      EventParticipants: true,
+      category: true,
+      participants: true,
     };
   }
 
@@ -146,7 +146,7 @@ export const countEvents = async (params: {
     ...restWhere,
     ...(categoryName
       ? {
-        EventCategories: {
+        category: {
           is: {
             name: {
               equals: categoryName,
@@ -174,7 +174,7 @@ const findEventById = async (id: string) => {
 }
 
 
-export const createEvent = async (data:
+export const createEvent =  (data:
   {
     name: string;
     description?: string;
@@ -185,6 +185,9 @@ export const createEvent = async (data:
     eventCategoriesId: number;
     latitude: number;
     longitude: number;
+    maxCapacity?: number;
+    ticketPrice: number;
+    capacity?: number;
   }
 ) => {
   return db.event.create({
@@ -204,6 +207,7 @@ export const createManyEvents = async (data: {
   eventCategoriesId: number;
   latitude: number;
   longitude: number;
+  capacity?: number;
 }[]) => {
   return db.event.createMany({
     data

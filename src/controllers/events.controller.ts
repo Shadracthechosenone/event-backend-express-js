@@ -19,8 +19,6 @@ const getEventsByUserId = asyncHandler(async (req, res) => {
             events
         },
 
-
-
     })
 })
 
@@ -79,7 +77,10 @@ const createEvent = asyncHandler(async (req, res, next) => {
             address,
             latitude,
             longitude,
-            eventCategoriesId } = req.body;
+            eventCategoriesId,
+            maxCapacity,
+            ticketPrice
+        } = req.body;
 
         const event = await EventService.createEvent({
             name,
@@ -90,7 +91,9 @@ const createEvent = asyncHandler(async (req, res, next) => {
             address,
             latitude,
             longitude,
-            eventCategoriesId
+            eventCategoriesId,
+            maxCapacity,
+            ticketPrice
         })
         sendResponse(res, 201, {
             message: "Event created successfully",

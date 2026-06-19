@@ -72,6 +72,9 @@ const createEvent = async (data: {
   latitude: number;
   longitude: number;
   eventCategoriesId: number;
+  ticketPrice: number;
+  maxCapacity?: number;
+  capacity?: number;
 }) => {
   const event = await eventsRepository.createEvent(data);
   return event;

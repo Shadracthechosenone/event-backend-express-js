@@ -112,7 +112,7 @@ model PasswordResetToken {
 
 // ÉVÉNEMENT
 
-model EventCategory {
+model EventCategories {
   id     Int     @id @default(autoincrement())
   name   String  @unique
   events Event[]
@@ -127,17 +127,19 @@ model Event {
   longitude   Float
   startAt     DateTime
   endAt       DateTime
+  favory       Boolean     @default(false)
   status      EventStatus @default(ACTIVE)
   isFree      Boolean     @default(false)
   ticketPrice Float       @default(0) // ignoré si isFree = true
   maxCapacity Int? // null = illimité
-  categoryId  Int
+  eventCategoriesId  Int
+  capacity    Int? // nombre de place disponible (calculé automatiquement)
   userId      String // organisateur
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   // Relations
-  category      EventCategory      @relation(fields: [categoryId], references: [id])
+  category      EventCategories      @relation(fields: [eventCategoriesId], references: [id])
   organizer     User               @relation(fields: [userId], references: [id])
   images        EventImage[]
   tickets       Ticket[]
