@@ -5,7 +5,7 @@ import AppError from "../utils/AppError.js";
 interface EventImage {
     eventId: string
     url: string
-    
+
 }
 
 const getEventImages = async (): Promise<EventImage[] | []> => {

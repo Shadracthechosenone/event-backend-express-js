@@ -249,7 +249,7 @@ async function findUserByResetToken(token: string): Promise<{ userId: string } |
         return { message: "Invalid or expired password reset token" };
     }
 
-console.log("Token found for user ID:", tokenfound); // Debug log
+    console.log("Token found for user ID:", tokenfound); // Debug log
     return { userId: tokenfound.userId };
 }
 

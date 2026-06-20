@@ -29,7 +29,7 @@ const createReview = async (data: {
     eventId: string,
     userId: string,
     rating: number
-    comment: string 
+    comment: string
     createdAt: Date
 }) => {
     const review = await ReviewRepository.createReview(data);

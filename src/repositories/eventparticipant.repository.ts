@@ -105,5 +105,6 @@ export const EventParticipantRepository = {
     createManyEventParticipants,
     deleteEventParticipant,
     findEventParticipantsByStatus,
-    findEventParticipantsByUserId
+    findEventParticipantsByUserId,
+    findEventParticipantsByEventId
 }
