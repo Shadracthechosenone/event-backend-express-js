@@ -8,20 +8,21 @@ import eventImageRoutes from "@/src/modules/eventImages/eventImages.route.js"; /
 import reviewRoutes from "@/src/modules/review/review.route.js"; // Assuming you have review routes in a separate file
 import eventCategoryRoutes from "@/src/modules/eventCategory/eventcategory.routes.js"; // Assuming you have event category routes in a separate file
 import notificationRoutes from "@/src/modules/notification/notification.route.js"; // Assuming you have notification routes in a separate file
-
+import paymentRoutes from "@/src/modules/payment/payment.route.js"; // Assuming you have payment routes in a separate file
 
 
 export const configureV1Routes = () => {
   const router = express.Router();
   router.use("/auth", authRoutes); // Use the imported auth routes, not calling itself
   router.use("/", eventsRoutes); // Dynamically import events routes
-  router.use("/", eventsRoutes); // Dynamically import events routes
+  router.use("/", eventsRoutes); 
   router.use("/", ticketRoutes); // Dynamically import ticket routes
   router.use("/", eventParticipantRoutes); // Dynamically import event participant routes
   router.use("/", eventImageRoutes);
   router.use("/", reviewRoutes);
   router.use("/", eventCategoryRoutes);
   router.use("/", notificationRoutes);
+  router.use("/", paymentRoutes);
   // Add other v1 routes here
   // router.use("/users", userRoutes);
   // router.use("/events", eventRoutes);

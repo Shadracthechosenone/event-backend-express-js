@@ -3,6 +3,21 @@ import { db } from '@/src/utils/db.js';
 import { Prisma } from "@prisma/client";
 
 
+interface UpdateEventData {
+  name?: string;
+  description?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  startAt?: Date;
+  endAt?: Date;
+  ticketPrice?: number;
+  maxCapacity?: number;
+  eventCategoriesId?: number;
+  status?: "ACTIVE" | "INACTIVE" | "CANCELLED" | "COMPLETED";
+}
+
+
 const findAllEvents = () => {
 
   const events = db.event.findMany({
@@ -163,11 +178,13 @@ export const countEvents = async (params: {
 
 
 const findEventById = async (id: string) => {
-  console.log("Fetching event with ID:", id);
 
   return db.event.findUnique({
     where: {
       id
+    },
+    include: {
+      participants: true
     }
   })
 
@@ -225,6 +242,16 @@ export const deleteEvent = async (id: string) => {
 
 
 
+export const updateEvent = (
+  id: string,
+  data: UpdateEventData
+) => {
+  return db.event.update({
+    where: { id },
+    data,
+  });
+};
+
 
 export const eventsRepository = {
   findAllEvents,
@@ -236,6 +263,7 @@ export const eventsRepository = {
   findEventById,
   createEvent,
   createManyEvents,
-  deleteEvent
+  deleteEvent,
+  updateEvent
 
 }   

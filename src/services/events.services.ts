@@ -1,7 +1,7 @@
 
 import { countEvents, eventsRepository, findEventsByUserId, findManyEvents } from '@/src/repositories/events.repository.js';
 import AppError from "../utils/AppError.js";
-import { Prisma } from "@prisma/client";
+import { Prisma,EventStatus } from "@prisma/client";
 import ApiFeatures from '../utils/ApiFeatures.js';
 
 
@@ -11,6 +11,21 @@ interface Event {
   description: string | null;
   date?: Date;
   userId?: string;
+}
+
+
+interface UpdateEventDto {
+  name?: string;
+  description?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  startAt?: Date;
+  endAt?: Date;
+  ticketPrice?: number;
+  maxCapacity?: number;
+  eventCategoriesId?: number;
+  isFree?: boolean;
 }
 
 const getEventsByUser = async (userId: string): Promise<Event[] | []> => {
@@ -48,7 +63,7 @@ export const getEvents = async (queryString: Record<string, any>) => {
     where: finalWhere,
     orderBy: orderBy || { createdAt: "desc" },
     skip,
-    take,
+    take, 
     select,
   });
 
@@ -102,6 +117,108 @@ const getEventbyId = async (id: string) => {
   }
   return event;
 }
+
+
+export const updateEventService = async (
+  eventId: string,
+  userId: string,
+  data: UpdateEventDto
+) => {
+  // 1. Vérifier que l'événement existe
+  const event = await eventsRepository.findEventById(eventId);
+
+  if (!event) {
+    throw new Error("Événement introuvable");
+  }
+
+  // 2. Vérifier que l'utilisateur est l'organisateur
+  if (event.userId !== userId) {
+    throw new Error(
+      "Vous n'êtes pas autorisé à modifier cet événement"
+    );
+  }
+
+  // 3. Empêcher la modification d'un événement terminé
+  if (
+    event.status === EventStatus.COMPLETED ||
+    new Date(event.endAt) < new Date()
+  ) {
+    const forbiddenFields = [
+      "startAt",
+      "endAt",
+      "ticketPrice",
+      "maxCapacity",
+      "isFree",
+      "eventCategoriesId",
+    ];
+
+    const hasForbiddenUpdate = forbiddenFields.some(
+      (field) => field in data
+    );
+
+    if (hasForbiddenUpdate) {
+      throw new Error(
+        "Cet événement est terminé et ne peut plus être modifié"
+      );
+    }
+  }
+
+  // 4. Validation des dates
+  const startAt = data.startAt ?? event.startAt;
+  const endAt = data.endAt ?? event.endAt;
+
+  if (new Date(startAt) >= new Date(endAt)) {
+    throw new Error(
+      "La date de fin doit être postérieure à la date de début"
+    );
+  }
+
+  // 5. Empêcher le passage gratuit → payant après inscriptions
+  const hasParticipants = (event.participants?.length ?? 0) > 0;
+
+  if (
+    hasParticipants &&
+    event.isFree &&
+    data.isFree === false
+  ) {
+    throw new Error(
+      "Impossible de transformer un événement gratuit en événement payant après les inscriptions"
+    );
+  }
+
+  // 6. Validation du prix
+  if (data.ticketPrice !== undefined && data.ticketPrice < 0) {
+    throw new Error(
+      "Le prix du ticket ne peut pas être négatif"
+    );
+  }
+
+  // 7. Validation de la capacité
+  if (
+    data.maxCapacity !== undefined &&
+    data.maxCapacity !== null
+  ) {
+    const currentParticipants =
+      event.participants?.length ?? 0;
+
+    if (data.maxCapacity < currentParticipants) {
+      throw new Error(
+        `La capacité maximale ne peut pas être inférieure au nombre actuel de participants (${currentParticipants})`
+      );
+    }
+  }
+
+  // 8. Si l'événement devient gratuit
+  if (data.isFree === true) {
+    data.ticketPrice = 0;
+  }
+
+  // 9. Mise à jour
+  const updatedEvent = await eventsRepository.updateEvent(eventId, data);
+
+  return updatedEvent;
+};
+
 
 
 
