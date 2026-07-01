@@ -175,6 +175,8 @@ model Ticket {
   // Relations
   event       Event             @relation(fields: [eventId], references: [id])
   user        User              @relation(fields: [userId], references: [id])
+  payment     Payment?          @relation(fields: [paymentId], references: [id])
+  
   participant EventParticipant? // créé automatiquement après confirmation
 }
 
@@ -250,7 +252,7 @@ model Payment {
   updatedAt       DateTime      @updatedAt
 
   // Relations
- // ticket          Ticket        @relation(fields: [ticketId], references: [id])
   user            User          @relation(fields: [userId], references: [id])
   event          Event         @relation(fields: [eventId], references: [id], onDelete: Cascade) // pour faciliter les notifications liées au paiement
+  ticket        Ticket[]
 }

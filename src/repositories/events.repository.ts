@@ -252,6 +252,23 @@ export const updateEvent = (
   });
 };
 
+const findAvailablePlacesByEventId = async (eventId: string) => {
+
+  const seats = await db.event.findUnique({
+    where: {
+      id: eventId},
+
+    select:{
+      capacity: true,
+    }
+    
+    }
+    )
+
+    return seats?.capacity??null;
+  }
+
+
 
 export const eventsRepository = {
   findAllEvents,
@@ -264,6 +281,7 @@ export const eventsRepository = {
   createEvent,
   createManyEvents,
   deleteEvent,
-  updateEvent
+  updateEvent,
+  findAvailablePlacesByEventId
 
 }   

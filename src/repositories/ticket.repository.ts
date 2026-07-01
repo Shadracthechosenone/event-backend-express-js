@@ -1,5 +1,5 @@
 import { db } from '@/src/utils/db.js';
-import { TicketStatus } from "@prisma/client";
+import { TicketStatus,Prisma } from "@prisma/client";
 
 
 const findAllTickets = () => {
@@ -16,16 +16,6 @@ const findAllTickets = () => {
 
 }
 
-const findTicketById = async (id: string) => {
-    console.log("Fetching ticket with ID:", id);
-
-    return db.ticket.findUnique({
-        where: {
-            id
-        }
-    })
-
-}
 
 const findTicketsByEventId = async (eventId: string) => {
     return db.ticket.findMany({
@@ -102,6 +92,145 @@ export const deleteTicket = async (id: string) => {
 }
 
 
+// added infos 
+
+const findTicketById = (id: string) => {
+    const ticket = db.ticket.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            eventId: true,
+            userId: true,
+            price: true,
+            quantity: true,
+            status: true,
+            qrCode: true,
+        }
+    });
+    return ticket;
+}
+
+const findTicketWithPayment = (id: string) => {
+    const ticket = db.ticket.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            eventId: true,
+            userId: true,
+            price: true,
+            status: true,
+            payment: true,
+        }
+    });
+    return ticket;
+}
+
+// Cherche un ticket existant pour un user/event avec un statut donné
+// (utile pour retrouver un ticket PENDING avant d'en recréer un)
+const findTicketByUserAndEventAndStatus = (
+    userId: string,
+    eventId: string,
+    status: TicketStatus
+) => {
+    const ticket = db.ticket.findFirst({
+        where: { userId, eventId, status },
+        orderBy: { createdAt: "desc" },
+        select: {
+            id: true,
+            eventId: true,
+            userId: true,
+            price: true,
+            status: true,
+        }
+    });
+    return ticket;
+}
+
+const findAllTicketsByUserAndEvent = (userId: string, eventId: string) => {
+    const tickets = db.ticket.findMany({
+        where: { userId, eventId },
+        orderBy: { createdAt: "desc" },
+        select: {
+            id: true,
+            eventId: true,
+            userId: true,
+            status: true,
+            createdAt: true,
+        }
+    });
+    return tickets;
+}
+
+// Crée un ticket (utilisable dans une transaction via tx)
+const createTicketfn = (
+    data: {
+        eventId: string;
+        userId: string;
+        price: number;
+        quantity?: number;
+        status?: TicketStatus;
+    },
+    tx?: Prisma.TransactionClient
+) => {
+    const client = tx ?? db;
+    const ticket = client.ticket.create({
+        data: {
+            eventId: data.eventId,
+            userId: data.userId,
+            price: data.price,
+            quantity: data.quantity ?? 1,
+            status: data.status ?? "PENDING",
+        },
+        select: {
+            id: true,
+            eventId: true,
+            userId: true,
+            price: true,
+            status: true,
+        }
+    });
+    return ticket;
+}
+
+// Met à jour le statut d'un ticket (utilisable dans une transaction via tx)
+const updateTicketStatus = (
+    id: string,
+    status: TicketStatus,
+    tx?: Prisma.TransactionClient
+) => {
+    const client = tx ?? db;
+    const ticket = client.ticket.update({
+        where: { id },
+        data: { status },
+        select: {
+            id: true,
+            status: true,
+        }
+    });
+    return ticket;
+}
+
+// Assigne un QR code à un ticket (après confirmation)
+const setTicketQrCode = (
+    id: string,
+    qrCode: string,
+    tx?: Prisma.TransactionClient
+) => {
+    const client = tx ?? db;
+    const ticket = client.ticket.update({
+        where: { id },
+        data: { qrCode },
+        select: {
+            id: true,
+            qrCode: true,
+        }
+    });
+    return ticket;
+}
+
+
+
+
 
 export const TicketRepository = {
     findAllTickets,
@@ -110,5 +239,12 @@ export const TicketRepository = {
     createManyTickets,
     deleteTicket,
     findTicketsByStatus,
-    findTicketsByUserId
+    findTicketsByUserId,
+    findTicketsByEventId,
+    findTicketWithPayment,
+    findTicketByUserAndEventAndStatus,
+    findAllTicketsByUserAndEvent,
+    createTicketfn,
+    updateTicketStatus,
+    setTicketQrCode
 }

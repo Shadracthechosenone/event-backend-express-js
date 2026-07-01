@@ -1,5 +1,17 @@
 import { db } from '@/src/utils/db.js';
-import { ParticipantStatus } from "@prisma/client";
+import { ParticipantStatus,Prisma } from "@prisma/client";
+
+
+interface EventParticipant {
+    userId: string
+    eventId: string
+    ticketId: string | null
+    status: ParticipantStatus
+    checkedIn: boolean
+    checkedInAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+}
 
 const findAllEventParticipants = () => {
 
@@ -97,6 +109,129 @@ export const deleteEventParticipant = async (id: string) => {
 }
 
 
+const findByEventAndUser = async (
+    eventId: string,
+    userId: string
+): Promise<EventParticipant | null> => {
+    return db.eventParticipant.findUnique({
+        where: {
+            eventId_userId: { eventId, userId },
+        },
+    });
+};
+
+
+// Grâce à @@unique([eventId, userId]) : un user = une seule participation par event
+const findParticipantByEventAndUser = (eventId: string, userId: string) => {
+    const participant = db.eventParticipant.findUnique({
+        where: {
+            eventId_userId: { eventId, userId },
+        },
+        select: {
+            id: true,
+            eventId: true,
+            userId: true,
+            status: true,
+        }
+    });
+    return participant;
+}
+
+const findParticipantById = (id: string) => {
+    const participant = db.eventParticipant.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            eventId: true,
+            userId: true,
+            status: true,
+            checkedIn: true,
+        }
+    });
+    return participant;
+}
+
+// Crée une participation (utilisable dans une transaction via tx)
+// - Event gratuit : ticketId = null, status = REGISTERED
+// - Event payant  : ticketId renseigné après confirmation paiement, status = CONFIRMED
+const createEventParticipantfn = (
+    data: {
+        eventId: string;
+        userId: string;
+        ticketId?: string;
+        status?: ParticipantStatus;
+    },
+    tx?: Prisma.TransactionClient
+) => {
+    const client = tx ?? db;
+    const participant = client.eventParticipant.create({
+        data: {
+            eventId: data.eventId,
+            userId: data.userId,
+            ticketId: data.ticketId,
+            status: data.status ?? "REGISTERED",
+        },
+        select: {
+            id: true,
+            eventId: true,
+            userId: true,
+            status: true,
+        }
+    });
+    return participant;
+}
+
+// Met à jour le statut d'une participation (ex: après confirmation paiement)
+const updateParticipantStatus = (
+    id: string,
+    status: ParticipantStatus,
+    tx?: Prisma.TransactionClient
+) => {
+    const client = tx ?? db;
+    const participant = client.eventParticipant.update({
+        where: { id },
+        data: { status },
+        select: {
+            id: true,
+            status: true,
+        }
+    });
+    return participant;
+}
+
+// Marque un participant comme présent (scan QR à l'entrée)
+const markParticipantCheckedIn = (id: string, tx?: Prisma.TransactionClient) => {
+    const client = tx ?? db;
+    const participant = client.eventParticipant.update({
+        where: { id },
+        data: {
+            checkedIn: true,
+            checkedInAt: new Date(),
+            status: "PRESENT",
+        },
+        select: {
+            id: true,
+            checkedIn: true,
+            checkedInAt: true,
+            status: true,
+        }
+    });
+    return participant;
+}
+
+// Compte le nombre de participants actifs sur un event
+// (REGISTERED + CONFIRMED + PRESENT, exclut CANCELLED)
+const countActiveParticipantsByEvent = (eventId: string) => {
+    const count = db.eventParticipant.count({
+        where: {
+            eventId,
+            status: { in: ["REGISTERED", "CONFIRMED", "PRESENT"] },
+        },
+    });
+    return count;
+}
+
+
 
 export const EventParticipantRepository = {
     findAllEventParticipants,
@@ -106,5 +241,13 @@ export const EventParticipantRepository = {
     deleteEventParticipant,
     findEventParticipantsByStatus,
     findEventParticipantsByUserId,
-    findEventParticipantsByEventId
+    findEventParticipantsByEventId,
+    findByEventAndUser,
+    findParticipantByEventAndUser,
+    findParticipantById,
+    createEventParticipantfn,
+    updateParticipantStatus,
+    markParticipantCheckedIn,
+    countActiveParticipantsByEvent
+    
 }

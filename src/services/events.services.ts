@@ -119,7 +119,7 @@ const getEventbyId = async (id: string) => {
 }
 
 
-export const updateEventService = async (
+export const updateEvent = async (
   eventId: string,
   userId: string,
   data: UpdateEventDto
@@ -162,7 +162,7 @@ export const updateEventService = async (
       );
     }
   }
-
+  
   // 4. Validation des dates
   const startAt = data.startAt ?? event.startAt;
   const endAt = data.endAt ?? event.endAt;
@@ -220,6 +220,16 @@ export const updateEventService = async (
 };
 
 
+const getAvailablePlacesByEventId = async (eventId: string) => {
+
+  const seats = await eventsRepository.findAvailablePlacesByEventId(eventId);
+
+  if (!seats) {
+    throw new AppError(404, "seats not found");
+  }
+
+  return seats;}
+
 
 
 export const EventService = {
@@ -227,6 +237,8 @@ export const EventService = {
   getEvents,
   deleteEvent,
   createEvent,
-  getEventbyId
+  getEventbyId,
+  updateEvent,
+  getAvailablePlacesByEventId
 
 }
