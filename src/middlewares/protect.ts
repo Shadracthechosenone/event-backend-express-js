@@ -23,18 +23,22 @@ const protect = async (
       secret
     ) as User;
 
-  
+
 
     const user = await db.user.findUnique({
       where: { id: decoded.id },
-      select: { id: true, role: true },
+      select: { id: true, role: true, email: true, phone: true },
     });
 
     if (!user) {
       return next(new AppError(401, "User no longer exists."));
     }
 
-    req.user = { id: decoded.id, role: user.role };
+    req.user = {
+      id: decoded.id, role: user.role,
+      phone: user.phone as string | undefined,
+      email: user.email
+    };
     next();
   } catch (error) {
     console.log(error);

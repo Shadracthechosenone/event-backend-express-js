@@ -13,6 +13,7 @@ router.get("/events/:id", protect, eventcontroller.getEventById);
 router.get("/events/user/me", protect, eventcontroller.getEventsByUserConnectedId);
 router.put("/events/:id", protect, eventcontroller.updateEvent);
 router.get("/events/user/:id", protect, eventcontroller.getEventsByUserId);
+router.post("/events/:id/register", protect, eventcontroller.registerToEventHandler);
 
 export default router;
 

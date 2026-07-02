@@ -117,7 +117,7 @@ const getEventParticipantByEventId = async (eventId: string): Promise<EventParti
     return eventParticipants;
 }
 
-const registerEventParticipant = async (data:
+export const registerEventParticipant = async (data:
     RegisterToEventInput
 ): Promise<RegisterToEventResult> => {
     const { userId, eventId, paymentMethod } = data;
@@ -226,21 +226,85 @@ const registerEventParticipant = async (data:
     });
 
 
+    // NB: l'appel réel au provider (CinetPay/GeniusPay) pour générer le lien
+    // de paiement se fait dans le controller/service dédié au provider,
+    // en utilisant payment.id / ticket.id comme référence interne.
 
+}
 
+// added infos 
 
+type ConfirmPaymentInput = {
+    transactionRef: string;
+    status: "SUCCESS" | "FAILED";
+    failureReason?: string;
+};
+
+/**
+ * Confirme un paiement suite à un webhook provider (CinetPay/GeniusPay).
+ * Idempotent : si le paiement est déjà SUCCESS ou FAILED, ne refait rien.
+ */
+const confirmPayment = async (
+    data: ConfirmPaymentInput
+): Promise<Payment> => {
+    const { transactionRef, status, failureReason } = data;
+
+    const payment = await PaymentRepository.findPaymentByTransactionRef(transactionRef);
+    if (!payment) {
+        throw new AppError(404, "Payment not found for this transaction reference");
+    }
+
+    // Idempotence : webhook déjà traité, on ne rejoue rien
+    if (payment.status === "SUCCESS" || payment.status === "FAILED") {
+        return payment;
+    }
+
+    return db.$transaction(async (tx) => {
+        const updatedPayment = await PaymentRepository.updatePaymentStatus(
+            payment.id,
+            {
+                status,
+                transactionRef,
+                failureReason: status === "FAILED" ? failureReason : undefined,
+                paidAt: status === "SUCCESS" ? new Date() : undefined,
+            },
+            tx
+        );
+
+        if (status === "SUCCESS") {
+            const ticket = await TicketRepository.updateTicketStatus(
+                payment.ticketId,
+                "CONFIRMED",
+                tx
+            );
+
+            await EventParticipantRepository.createEventParticipantfn(
+                {
+                    eventId: payment.eventId,
+                    userId: payment.userId,
+                    ticketId: ticket.id,
+                    status: "CONFIRMED",
+                },
+                tx
+            );
+        } else {
+            await TicketRepository.updateTicketStatus(payment.ticketId, "CANCELLED", tx);
+        }
+
+        return updatedPayment;
+    });
 
 }
 
 
-
-export const EventParticipantService = {
-    getEventParticipantByUserId,
-    createEventParticipant,
-    deleteEventParticipant,
-    getEventParticipantById,
-    getEventParticipantByEventId
-}
+    export const EventParticipantService = {
+        getEventParticipantByUserId,
+        createEventParticipant,
+        deleteEventParticipant,
+        getEventParticipantById,
+        getEventParticipantByEventId,
+        confirmPayment
+    }
 
 
 

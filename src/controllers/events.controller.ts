@@ -2,7 +2,9 @@ import { EventService } from "../services/events.services.js"
 import sendResponse from "../utils/sendResponse.js";
 import AppError from '../utils/AppError.js';
 import asyncHandler from '../utils/asyncHandler.js';
-
+import { registerEventParticipant } from "../services/eventParticipant.services.js";
+import { initiateGeniusPayPayment } from "../services/geniuspay.services.js";
+import catchAsync from "../utils/catchAsync.js"
 
 
 
@@ -185,6 +187,33 @@ const updateEvent = asyncHandler(async (req, res) => {
 })
 
 
+const registerToEventHandler = catchAsync(async (req, res) => {
+    const userId  = req.user?.id as string;
+    const { eventId, paymentMethod } = req.body;
+
+    const result = await registerEventParticipant({ userId , eventId, paymentMethod });
+
+    if (result.type === "FREE_REGISTRATION") {
+        return res.status(201).json({ status: "success", data: result.ticket });
+    }
+
+    const { checkoutUrl } = await initiateGeniusPayPayment({
+        paymentId: result.payment.id,
+        amount: result.ticket.price,
+        description: `Inscription événement`,
+        customerName: req.user?.name,
+        customerEmail: req.user?.email,
+        customerPhone: req.user?.phone,
+    });
+
+    res.status(201).json({
+        status: "success",
+        data: { ticket: result.ticket, checkoutUrl },
+    });
+});
+
+export { registerToEventHandler };
+
 
 
 
@@ -195,7 +224,8 @@ export const eventcontroller = {
     createEvent,
     getEventById,
     updateEvent,
-    getEventsByUserId
+    getEventsByUserId,
+    registerToEventHandler
 }
 
 

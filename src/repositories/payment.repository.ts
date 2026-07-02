@@ -228,7 +228,7 @@ const createPaymentfn = (
 }
 
 // Met à jour le statut d'un paiement (ex: confirmation webhook)
-const updatePaymentStatus = (
+export const updatePaymentStatus = (
     id: string,
     data: {
         status: PaymentStatus;
@@ -247,6 +247,7 @@ const updatePaymentStatus = (
             ticketId: true,
             status: true,
             paidAt: true,
+            transactionRef: true,
         }
     });
     return payment;
