@@ -14,6 +14,8 @@ router.get("/events/user/me", protect, eventcontroller.getEventsByUserConnectedI
 router.put("/events/:id", protect, eventcontroller.updateEvent);
 router.get("/events/user/:id", protect, eventcontroller.getEventsByUserId);
 router.post("/events/:id/register", protect, eventcontroller.registerToEventHandler);
+router.get("/events/map", eventcontroller.getEventsInViewportHandler);
+router.get("/events/nearby", eventcontroller.getEventsNearbyHandler);
 
 export default router;
 

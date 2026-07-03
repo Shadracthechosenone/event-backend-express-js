@@ -220,6 +220,8 @@ export const updateEvent = async (
 };
 
 
+// services for events mapping and nearby search
+
 const getAvailablePlacesByEventId = async (eventId: string) => {
 
   const seats = await eventsRepository.findAvailablePlacesByEventId(eventId);
@@ -231,6 +233,33 @@ const getAvailablePlacesByEventId = async (eventId: string) => {
   return seats;}
 
 
+const getEventsInViewport = (bounds: {
+    swLat: number;
+    swLng: number;
+    neLat: number;
+    neLng: number;
+}) => {
+    // garde-fou : éviter qu'un client demande toute la planète d'un coup
+    const latSpan = bounds.neLat - bounds.swLat;
+    const lngSpan = bounds.neLng - bounds.swLng;
+    if (latSpan > 5 || lngSpan > 5) {
+        throw new AppError(400, "Zone de recherche trop large");
+    }
+
+    return eventsRepository.findEventsInBoundingBox({ ...bounds, status: "ACTIVE" });
+}
+
+const getEventsNearby = (params: { lat: number; lng: number; radiusKm?: number }) => {
+    const radiusKm = params.radiusKm ?? 10; // valeur par défaut raisonnable
+
+    if (radiusKm > 100) {
+        throw new AppError(400, "Le rayon de recherche ne peut pas dépasser 100 km");
+    }
+
+    return eventsRepository.findEventsNearby({ lat: params.lat, lng: params.lng, radiusKm });
+}
+
+
 
 export const EventService = {
   getEventsByUser,
@@ -239,6 +268,8 @@ export const EventService = {
   createEvent,
   getEventbyId,
   updateEvent,
-  getAvailablePlacesByEventId
+  getAvailablePlacesByEventId,
+  getEventsInViewport,
+  getEventsNearby
 
 }

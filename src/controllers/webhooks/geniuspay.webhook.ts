@@ -22,7 +22,7 @@ const geniusPayWebhookHandler = catchAsync(async (req, res) => {
     }
 
     // Vérification de la signature : HMAC-SHA256(timestamp + "." + payload, secret)
-    const rawPayload = JSON.stringify(req.body);
+    const rawPayload = req.body.toString("utf8");
     const dataToSign = `${timestamp}.${rawPayload}`;
     const expectedSignature = crypto
         .createHmac("sha256", GENIUSPAY_WEBHOOK_SECRET)
@@ -43,7 +43,8 @@ const geniusPayWebhookHandler = catchAsync(async (req, res) => {
         throw new AppError(400, "Webhook timestamp too old");
     }
 
-    const { event, data } = req.body;
+    const parsedBody = JSON.parse(rawPayload);
+    const { event, data } = parsedBody;
 
     if (event === "payment.success" || event === "payment.failed") {
         await EventParticipantService.confirmPayment({

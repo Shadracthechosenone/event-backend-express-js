@@ -41,7 +41,8 @@ const protect = async (
     };
     next();
   } catch (error) {
-    console.log(error);
+    //console.log(error);
+    console.log(`[protect] Erreur sur ${req.method} ${req.originalUrl}:`, error);
     return next(new AppError(401, "Invalid access token, please log in"));
   }
 };

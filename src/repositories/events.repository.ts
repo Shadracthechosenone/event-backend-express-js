@@ -1,6 +1,6 @@
 
 import { db } from '@/src/utils/db.js';
-import { Prisma } from "@prisma/client";
+import { Prisma, EventStatus } from "@prisma/client";
 
 
 interface UpdateEventData {
@@ -191,7 +191,7 @@ const findEventById = async (id: string) => {
 }
 
 
-export const createEvent =  (data:
+export const createEvent = (data:
   {
     name: string;
     description?: string;
@@ -256,17 +256,94 @@ const findAvailablePlacesByEventId = async (eventId: string) => {
 
   const seats = await db.event.findUnique({
     where: {
-      id: eventId},
+      id: eventId
+    },
 
-    select:{
+    select: {
       capacity: true,
     }
-    
-    }
-    )
 
-    return seats?.capacity??null;
   }
+  )
+
+  return seats?.capacity ?? null;
+}
+
+/* repository functions for finding events in a bounding box and nearby a point
+Map for location   
+*/
+
+// Événements dans un rectangle (bounding box) — pour l'affichage carte
+const findEventsInBoundingBox = (bounds: {
+  swLat: number;
+  swLng: number;
+  neLat: number;
+  neLng: number;
+  status?: EventStatus;
+}) => {
+  const events = db.event.findMany({
+    where: {
+      latitude: { gte: bounds.swLat, lte: bounds.neLat },
+      longitude: { gte: bounds.swLng, lte: bounds.neLng },
+      status: bounds.status ?? "ACTIVE",
+    },
+    select: {
+      id: true,
+      name: true,
+      latitude: true,
+      longitude: true,
+      startAt: true,
+      isFree: true,
+      ticketPrice: true,
+      eventCategoriesId: true,
+      images: {
+        where: { isPrimary: true },
+        select: { url: true },
+        take: 1,
+      },
+    },
+    take: 200, // limite de sécurité, voir clustering plus bas
+  });
+  return events;
+}
+
+// Événements proches d'un point (lat/lng) avec rayon en km — pour "près de moi"
+// Formule de Haversine directement en SQL (pas besoin de PostGIS)
+const findEventsNearby = (params: {
+  lat: number;
+  lng: number;
+  radiusKm: number;
+  limit?: number;
+}) => {
+  const { lat, lng, radiusKm, limit = 100 } = params;
+
+  // requête brute car Prisma ne supporte pas nativement le calcul de distance
+  const events = db.$queryRaw`
+        SELECT
+            id, name, latitude, longitude, "startAt", "isFree", "ticketPrice",
+            (
+                6371 * acos(
+                    cos(radians(${lat})) * cos(radians(latitude)) *
+                    cos(radians(longitude) - radians(${lng})) +
+                    sin(radians(${lat})) * sin(radians(latitude))
+                )
+            ) AS distance_km
+        FROM "Event"
+        WHERE status = 'ACTIVE'
+        HAVING (
+            6371 * acos(
+                cos(radians(${lat})) * cos(radians(latitude)) *
+                cos(radians(longitude) - radians(${lng})) +
+                sin(radians(${lat})) * sin(radians(latitude))
+            )
+        ) <= ${radiusKm}
+        ORDER BY distance_km ASC
+        LIMIT ${limit};
+    `;
+  return events;
+}
+
+export { findEventsInBoundingBox, findEventsNearby };
 
 
 
@@ -282,6 +359,8 @@ export const eventsRepository = {
   createManyEvents,
   deleteEvent,
   updateEvent,
-  findAvailablePlacesByEventId
+  findAvailablePlacesByEventId,
+  findEventsInBoundingBox,
+  findEventsNearby,
 
 }   

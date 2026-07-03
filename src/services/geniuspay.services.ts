@@ -22,8 +22,10 @@ const initiateGeniusPayPayment = async (data: {
     customerEmail?: string;
     customerPhone?: string;
 }) => {
-    const response = await axios.post(GENIUSPAY_BASE_URL, {
-        amount: data.amount,
+    try{
+
+        const response = await axios.post(GENIUSPAY_BASE_URL, {
+            amount: data.amount,
         currency: "XOF",
         description: data.description,
         customer: {
@@ -31,23 +33,32 @@ const initiateGeniusPayPayment = async (data: {
             email: data.customerEmail,
             phone: data.customerPhone,
         },
-        success_url: `${process.env.FRONTEND_URL}/payment/success`,
-        error_url: `${process.env.FRONTEND_URL}/payment/error`,
+        success_url: `${process.env.FRONTEND_URL}`,
+        error_url: `${process.env.FRONTEND_URL}`,
         // on stocke notre id interne dans metadata pour le retrouver au webhook
         metadata: {
             payment_id: data.paymentId,
         },
     }, { headers: geniusPayHeaders });
-
+    
     const { reference, checkout_url } = response.data.data;
-
+    
     // on enregistre la reference GeniusPay (MTX-...) comme transactionRef
     await updatePaymentStatus(data.paymentId, {
         status: "PENDING",
         transactionRef: reference,
     });
-
+    
     return { checkoutUrl: checkout_url, reference };
+}catch (error) {
+        if (axios.isAxiosError(error)) {
+            // C'est CETTE ligne qui va te donner la vraie raison
+            console.error("GeniusPay 422 details:", JSON.stringify(error.response?.data, null, 2));
+        }
+        throw error;
+
+
+}
 };
 
 export { initiateGeniusPayPayment };

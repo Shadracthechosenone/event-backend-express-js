@@ -138,6 +138,8 @@ model Event {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
+  @@index([latitude, longitude]) // accélère le filtrage par zone
+
   // Relations
   category      EventCategories      @relation(fields: [eventCategoriesId], references: [id])
   organizer     User               @relation(fields: [userId], references: [id])

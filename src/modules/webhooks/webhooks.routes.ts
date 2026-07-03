@@ -7,7 +7,10 @@ const router = express.Router();
 // express.raw() ICI seulement, pas globalement — pour la vérification de signature
 router.post(
     "/webhooks/geniuspay",
-    express.raw({ type: "application/json" }),
+    express.raw({ type: "application/json" }),(req, res, next) => {
+        console.log("🔔 Webhook GeniusPay reçu à", new Date().toISOString());
+        next();
+    },
     geniusPayWebhookHandler
 );
 

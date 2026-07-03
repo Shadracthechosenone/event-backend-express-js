@@ -215,6 +215,34 @@ const registerToEventHandler = catchAsync(async (req, res) => {
 export { registerToEventHandler };
 
 
+const getEventsInViewportHandler = asyncHandler(async (req, res, next) => {
+    try {
+        const { swLat, swLng, neLat, neLng } = req.query;
+        const events = await EventService.getEventsInViewport({
+            swLat: parseFloat(swLat as string),
+            swLng: parseFloat(swLng as string),
+            neLat: parseFloat(neLat as string),
+            neLng: parseFloat(neLng as string),
+        });
+        res.status(200).json({ status: "success", data: events });
+    } catch (error) {
+        next(error);
+    }
+});
+
+const getEventsNearbyHandler = asyncHandler(async (req, res, next) => {
+    try {
+        const { lat, lng, radiusKm } = req.query;
+        const events = await EventService.getEventsNearby({
+            lat: parseFloat(lat as string),
+            lng: parseFloat(lng as string),
+            radiusKm: radiusKm ? parseFloat(radiusKm as string) : undefined,
+        });
+        res.status(200).json({ status: "success", data: events });
+    } catch (error) {
+        next(error);
+    }
+});
 
 
 export const eventcontroller = {
@@ -225,7 +253,9 @@ export const eventcontroller = {
     getEventById,
     updateEvent,
     getEventsByUserId,
-    registerToEventHandler
+    registerToEventHandler,
+    getEventsInViewportHandler,
+    getEventsNearbyHandler
 }
 
 
