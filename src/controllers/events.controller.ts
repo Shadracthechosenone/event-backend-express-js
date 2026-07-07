@@ -188,10 +188,12 @@ const updateEvent = asyncHandler(async (req, res) => {
 
 
 const registerToEventHandler = catchAsync(async (req, res) => {
-    const userId  = req.user?.id as string;
-    const { eventId, paymentMethod } = req.body;
+    const userId = req.user?.id as string;
+    const { paymentMethod } = req.body;
 
-    const result = await registerEventParticipant({ userId , eventId, paymentMethod });
+    const eventId = req.params.id as string
+    //console.log("ID from params:", ID);
+    const result = await registerEventParticipant({ userId, eventId, paymentMethod });
 
     if (result.type === "FREE_REGISTRATION") {
         return res.status(201).json({ status: "success", data: result.ticket });

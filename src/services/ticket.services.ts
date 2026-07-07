@@ -10,7 +10,6 @@ interface Ticket {
     price: number
     quantity: number
     status: TicketStatus
-    qrCode: string | null
     paymentId: string | null
     createdAt: Date
     updatedAt: Date

@@ -186,7 +186,6 @@ export const registerEventParticipant = async (data:
                 {
                     eventId,
                     userId,
-                    ticketId: ticket.id,
                     status: "REGISTERED",
                 },
                 tx
