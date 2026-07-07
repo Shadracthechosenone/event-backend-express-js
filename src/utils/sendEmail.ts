@@ -1,14 +1,19 @@
 import nodemailer from "nodemailer";
 
-// Define the type for email options
+interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  cid?: string;
+}
+
 interface EmailOptions {
   to: string;
   subject: string;
   text: string;
   html: string;
+  attachments?: EmailAttachment[];
 }
 
-// Define the type for transporter configuration
 interface TransporterConfig {
   service: string;
   auth: {
@@ -17,13 +22,13 @@ interface TransporterConfig {
   };
 }
 
-// Define the type for mail options
 interface MailOptions {
   from: string;
   to: string;
   subject: string;
   text: string;
   html: string;
+  attachments?: EmailAttachment[];
 }
 
 const sendEmail = async ({
@@ -31,6 +36,7 @@ const sendEmail = async ({
   subject,
   text,
   html,
+  attachments,
 }: EmailOptions): Promise<boolean> => {
   try {
     const transporter = nodemailer.createTransport({
@@ -42,11 +48,12 @@ const sendEmail = async ({
     } as TransporterConfig);
 
     const mailOptions: MailOptions = {
-      from: "Dev Team <",
+      from: "Dev Team <", // <- à corriger, voir plus bas
       to,
       subject,
       text,
       html,
+      attachments,
     };
 
     const info = await transporter.sendMail(mailOptions);
@@ -57,6 +64,5 @@ const sendEmail = async ({
     return false;
   }
 };
-//test 
 
 export default sendEmail;

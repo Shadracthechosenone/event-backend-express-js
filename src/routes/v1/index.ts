@@ -15,7 +15,6 @@ export const configureV1Routes = () => {
   const router = express.Router();
   router.use("/auth", authRoutes); // Use the imported auth routes, not calling itself
   router.use("/", eventsRoutes); // Dynamically import events routes
-  router.use("/", eventsRoutes); 
   router.use("/", ticketRoutes); // Dynamically import ticket routes
   router.use("/", eventParticipantRoutes); // Dynamically import event participant routes
   router.use("/", eventImageRoutes);

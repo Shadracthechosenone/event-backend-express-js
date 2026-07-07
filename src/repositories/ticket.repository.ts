@@ -187,6 +187,7 @@ const createTicketfn = (
             userId: true,
             price: true,
             status: true,
+            quantity: true,
         }
     });
     return ticket;
@@ -205,13 +206,14 @@ const updateTicketStatus = (
         select: {
             id: true,
             status: true,
+            quantity: true,
         }
     });
     return ticket;
 }
 
 // Assigne un QR code à un ticket (après confirmation)
-const setTicketQrCode = (
+/*const setTicketQrCode = (
     id: string,
     qrCode: string,
     tx?: Prisma.TransactionClient
@@ -227,7 +229,7 @@ const setTicketQrCode = (
     });
     return ticket;
 }
-
+*/
 
 
 
@@ -246,5 +248,5 @@ export const TicketRepository = {
     findAllTicketsByUserAndEvent,
     createTicketfn,
     updateTicketStatus,
-    setTicketQrCode
+    //setTicketQrCode
 }

@@ -6,6 +6,9 @@ import { PaymentService } from '@/src/services/payment.services.js';
 import { PaymentRepository } from '@/src/repositories/payment.repository.js';
 import { TicketRepository } from '@/src/repositories/ticket.repository.js';
 import { db } from '@/src/utils/db.js';
+import { TicketItemRepository } from '../repositories/TicketItemRepository.repository.js';
+import { UserRepository } from '../repositories/user.repository.js';
+import { TicketItemService } from './TicketItemService.services.js';
 
 
 /* EventRegistrationService
@@ -54,7 +57,6 @@ interface EventParticipant {
 
     userId: string
     eventId: string
-    ticketId: string | null
     status: ParticipantStatus
     checkedIn: boolean
     checkedInAt: Date | null
@@ -238,6 +240,7 @@ type ConfirmPaymentInput = {
     transactionRef: string;
     status: "SUCCESS" | "FAILED";
     failureReason?: string;
+    recipients?: { email: string; name?: string }[]; // pour générer les TicketItems
 };
 
 /**
@@ -248,17 +251,14 @@ const confirmPayment = async (
     data: ConfirmPaymentInput
 ): Promise<Payment> => {
     const { transactionRef, status, failureReason } = data;
-
     const payment = await PaymentRepository.findPaymentByTransactionRef(transactionRef);
     if (!payment) {
         throw new AppError(404, "Payment not found for this transaction reference");
     }
-
     // Idempotence : webhook déjà traité, on ne rejoue rien
     if (payment.status === "SUCCESS" || payment.status === "FAILED") {
         return payment;
     }
-
     return db.$transaction(async (tx) => {
         const updatedPayment = await PaymentRepository.updatePaymentStatus(
             payment.id,
@@ -278,22 +278,47 @@ const confirmPayment = async (
                 tx
             );
 
-            await EventParticipantRepository.createEventParticipantfn(
+            // upsert au lieu de create : gère le cas où l'user a déjà
+            // une participation confirmée pour cet event (commande précédente)
+            await EventParticipantRepository.upsertEventParticipantFn(
                 {
                     eventId: payment.eventId,
                     userId: payment.userId,
-                    ticketId: ticket.id,
                     status: "CONFIRMED",
                 },
                 tx
             );
+
+            const userMail = await UserRepository.findUserById(payment.userId) ;
+
+            if (!userMail) {
+                throw new AppError(404, "User not found for this payment");
+            }
+
+            // NOUVEAU : génère un TicketItem (donc un QR) par unité achetée
+            const ticketItems = await TicketItemRepository.createManyForTicket(
+                {
+                    ticketId: ticket.id,
+                    quantity: ticket.quantity,
+                    recipients: data.recipients ?? [], // à ajouter sur ConfirmPaymentInput si pas déjà là
+                    defaultEmail: userMail, // ou récupéré via ticket/user
+                },
+                tx
+            ) ;
+
+            // envoi des mails en dehors de la transaction (I/O externe),
+            // fait juste après le $transaction plus bas
+            return { updatedPayment, ticketItems };
         } else {
             await TicketRepository.updateTicketStatus(payment.ticketId, "CANCELLED", tx);
+            return { updatedPayment, ticketItems: [] };
         }
-
+    }).then(async ({ updatedPayment, ticketItems }) => {
+        if (ticketItems.length > 0) {
+            await TicketItemService.sendTicketEmails(ticketItems); // QR generation + Nodemailer, hors transaction
+        }
         return updatedPayment;
     });
-
 }
 
 

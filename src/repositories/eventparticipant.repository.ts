@@ -1,17 +1,31 @@
 import { db } from '@/src/utils/db.js';
-import { ParticipantStatus,Prisma } from "@prisma/client";
+import { ParticipantStatus, Prisma } from "@prisma/client";
 
 
 interface EventParticipant {
     userId: string
     eventId: string
-    ticketId: string | null
     status: ParticipantStatus
     checkedIn: boolean
     checkedInAt: Date | null
     createdAt: Date
     updatedAt: Date
 }
+
+interface UpsertEventParticipantInput {
+    eventId: string;
+    userId: string;
+    status: ParticipantStatus;
+}
+
+
+
+interface UpsertEventParticipantInput {
+    eventId: string;
+    userId: string;
+    status: ParticipantStatus;
+}
+
 
 const findAllEventParticipants = () => {
 
@@ -113,10 +127,8 @@ const findByEventAndUser = async (
     eventId: string,
     userId: string
 ): Promise<EventParticipant | null> => {
-    return db.eventParticipant.findUnique({
-        where: {
-            eventId_userId: { eventId, userId },
-        },
+    return db.eventParticipant.findFirst({
+        where: { eventId, userId },
     });
 };
 
@@ -232,6 +244,41 @@ const countActiveParticipantsByEvent = (eventId: string) => {
 }
 
 
+const upsertEventParticipantFn = async (
+    data: UpsertEventParticipantInput,
+    tx: Prisma.TransactionClient
+) => {
+    const { eventId, userId, status } = data;
+
+    return tx.eventParticipant.upsert({
+        where: {
+            eventId_userId: {
+                eventId,
+                userId,
+            },
+        },
+        create: {
+            eventId,
+            userId,
+            status,
+        },
+        update: {
+            status,
+        },
+        select: {
+            id: true,
+            eventId: true,
+            userId: true,
+            status: true,
+            checkedIn: true,
+            createdAt: true,
+            updatedAt: true,
+        },
+    });
+};
+
+export { upsertEventParticipantFn };
+
 
 export const EventParticipantRepository = {
     findAllEventParticipants,
@@ -248,6 +295,7 @@ export const EventParticipantRepository = {
     createEventParticipantfn,
     updateParticipantStatus,
     markParticipantCheckedIn,
-    countActiveParticipantsByEvent
-    
+    countActiveParticipantsByEvent,
+    upsertEventParticipantFn
+
 }

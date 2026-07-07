@@ -45,7 +45,6 @@ enum NotificationType {
   PAYMENT_FAILED
 }
 
-
 enum PaymentStatus {
   PENDING
   SUCCESS
@@ -59,7 +58,13 @@ enum PaymentMethod {
   MTN_MONEY
   WAVE
   STRIPE
-  FREE        // pour les événements gratuits
+  FREE // pour les événements gratuits
+}
+
+enum TicketItemStatus {
+  ISSUED // QR généré, pas encore scanné
+  USED // scanné à l'entrée
+  CANCELLED // annulé (remboursement partiel, etc.)
 }
 
 // USER
@@ -83,7 +88,7 @@ model User {
   notifications       Notification[]
   reviews             Review[]
   passwordResetTokens PasswordResetToken[]
-  payments             Payment[]
+  payments            Payment[]
 }
 
 // SESSION / AUTH
@@ -98,6 +103,8 @@ model Session {
   expiresAt    DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model PasswordResetToken {
@@ -119,36 +126,39 @@ model EventCategories {
 }
 
 model Event {
-  id          String      @id @default(uuid())
-  name        String
-  description String?
-  address     String?
-  latitude    Float
-  longitude   Float
-  startAt     DateTime
-  endAt       DateTime
-  favory       Boolean     @default(false)
-  status      EventStatus @default(ACTIVE)
-  isFree      Boolean     @default(false)
-  ticketPrice Float       @default(0) // ignoré si isFree = true
-  maxCapacity Int? // null = illimité
-  eventCategoriesId  Int
-  capacity    Int? // nombre de place disponible (calculé automatiquement)
-  userId      String // organisateur
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                String      @id @default(uuid())
+  name              String
+  description       String?
+  address           String?
+  latitude          Float
+  longitude         Float
+  startAt           DateTime
+  endAt             DateTime
+  favory            Boolean     @default(false)
+  status            EventStatus @default(ACTIVE)
+  isFree            Boolean     @default(false)
+  ticketPrice       Float       @default(0) // ignoré si isFree = true
+  maxCapacity       Int? // null = illimité
+  eventCategoriesId Int
+  capacity          Int? // nombre de place disponible (calculé automatiquement)
+  userId            String // organisateur
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   @@index([latitude, longitude]) // accélère le filtrage par zone
+  @@index([userId]) // "mes événements créés" (organisateur)
+  @@index([eventCategoriesId]) // filtrage par catégorie
+  @@index([status, startAt]) // "événements actifs à venir", triés par date
 
   // Relations
-  category      EventCategories      @relation(fields: [eventCategoriesId], references: [id])
+  category      EventCategories    @relation(fields: [eventCategoriesId], references: [id])
   organizer     User               @relation(fields: [userId], references: [id])
   images        EventImage[]
   tickets       Ticket[]
   participants  EventParticipant[]
   reviews       Review[]
   notifications Notification[]
-  Payments       Payment[]
+  Payments      Payment[]
 }
 
 model EventImage {
@@ -158,6 +168,8 @@ model EventImage {
   isPrimary Boolean  @default(false)
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+
+  @@index([eventId])
 }
 
 // TICKET (réservation + paiement)
@@ -169,38 +181,59 @@ model Ticket {
   price     Float // 0 si gratuit
   quantity  Int          @default(1)
   status    TicketStatus @default(PENDING)
-  qrCode    String?      @unique // généré après confirmation
   paymentId String? // référence CinetPay / Stripe
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
+  @@index([userId, status]) // "mes tickets en attente/confirmés"
+  @@index([eventId, status]) // "tickets confirmés pour cet event" (compter les ventes)
+  @@index([paymentId])
+
   // Relations
-  event       Event             @relation(fields: [eventId], references: [id])
-  user        User              @relation(fields: [userId], references: [id])
-  payment     Payment?          @relation(fields: [paymentId], references: [id])
-  
-  participant EventParticipant? // créé automatiquement après confirmation
+  event   Event    @relation(fields: [eventId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  items TicketItem[] // <-- une ligne par place achetée
+  // NOTE: plus de "participant" ici — EventParticipant n'est plus lié à un Ticket précis
 }
 
-// PARTICIPANT (présence confirmée à l'événement)
+model TicketItem {
+  id          String           @id @default(uuid(7)) // quasi-croissant : évite la fragmentation du B-tree en forte charge
+  ticketId    String
+  qrCode      String           @unique @default(uuid()) // contenu encodé dans le QR
+  status      TicketItemStatus @default(ISSUED)
+  holderName  String? // optionnel : juste pour affichage
+  holderEmail String // requis : où envoyer le billet
+  usedAt      DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([holderEmail]) // "tous les billets envoyés à cet email"
+}
+
+// PARTICIPANT (lien user <-> event, indépendant du nombre de commandes)
 
 model EventParticipant {
   id          String            @id @default(uuid())
   eventId     String
   userId      String
-  ticketId    String?           @unique // null si événement gratuit
   status      ParticipantStatus @default(REGISTERED)
   checkedIn   Boolean           @default(false) // a scanné son QR à l'entrée
   checkedInAt DateTime?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
-  // Relations
-  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ticket Ticket? @relation(fields: [ticketId], references: [id])
+  @@unique([eventId, userId]) // 1 ligne "présence" par user, peu importe le nombre de commandes
+  @@index([userId])
+  @@index([eventId, status])
 
-  @@unique([eventId, userId]) // un user = une participation par événement
+  // Relations
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // REVIEW
@@ -213,10 +246,11 @@ model Review {
   comment   String?
   createdAt DateTime @default(now())
 
+  @@unique([eventId, userId]) // un seul avis par user par événement
+  @@index([userId])
+
   event Event @relation(fields: [eventId], references: [id])
   user  User  @relation(fields: [userId], references: [id])
-
-  @@unique([eventId, userId]) // un seul avis par user par événement
 }
 
 // NOTIFICATION
@@ -232,29 +266,34 @@ model Notification {
   data      Json? // metadata libre (ticketId, etc.)
   createdAt DateTime         @default(now())
 
+  @@index([userId, read]) // "mes notifications non lues", cas le plus fréquent
+  @@index([eventId])
+
   user  User   @relation(fields: [userId], references: [id])
   event Event? @relation(fields: [eventId], references: [id])
 }
 
-
-
 model Payment {
-  id              String        @id @default(uuid())
-  ticketId        String        @unique   // 1 ticket = 1 paiement
-  userId          String
-  amount          Float
-  eventId         String
-  currency        String        @default("XOF")  // Franc CFA
-  status          PaymentStatus @default(PENDING)
-  method          PaymentMethod
-  transactionRef  String?       @unique   // référence retournée par CinetPay/Wave...
-  failureReason   String?       // message d'erreur si FAILED
-  paidAt          DateTime?     // null tant que pas confirmé
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id             String        @id @default(uuid())
+  ticketId       String        @unique // 1 ticket = 1 paiement
+  userId         String
+  amount         Float
+  eventId        String
+  currency       String        @default("XOF") // Franc CFA
+  status         PaymentStatus @default(PENDING)
+  method         PaymentMethod
+  transactionRef String?       @unique // référence retournée par CinetPay/Wave...
+  failureReason  String? // message d'erreur si FAILED
+  paidAt         DateTime? // null tant que pas confirmé
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([status, createdAt]) // dashboard admin : paiements par statut, triés par date
 
   // Relations
-  user            User          @relation(fields: [userId], references: [id])
-  event          Event         @relation(fields: [eventId], references: [id], onDelete: Cascade) // pour faciliter les notifications liées au paiement
-  ticket        Ticket[]
+  user   User    @relation(fields: [userId], references: [id])
+  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticket Ticket[]
 }
