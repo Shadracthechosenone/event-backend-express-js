@@ -207,8 +207,13 @@ export const createEvent = (data:
     capacity?: number;
   }
 ) => {
+  const { maxCapacity, ...restData } = data
   return db.event.create({
-    data
+    data: {
+      ...restData,
+      maxCapacity: maxCapacity,
+      capacity: maxCapacity ?? null,
+    }
   }
   )
 }
@@ -225,9 +230,17 @@ export const createManyEvents = async (data: {
   latitude: number;
   longitude: number;
   capacity?: number;
+  maxCapacity?: number;
 }[]) => {
   return db.event.createMany({
-    data
+    data: data.map((event) => {
+      const { maxCapacity, ...rest } = event;
+      return {
+        ...rest,
+        maxCapacity: maxCapacity,
+        capacity: maxCapacity ?? null,
+      };
+    })
   })
 }
 
@@ -346,6 +359,26 @@ const findEventsNearby = (params: {
 export { findEventsInBoundingBox, findEventsNearby };
 
 
+const updateCapacity = async (id: string, data: { seat: number },
+      tx?: Prisma.TransactionClient
+) => {
+  const client = tx ?? db
+  return client.event.update({
+    data: {
+      capacity: data.seat-1
+    },
+    where: {
+      id
+    },
+    select :{
+      id:true,
+      capacity:true
+    }
+  }
+  )
+
+}
+
 
 export const eventsRepository = {
   findAllEvents,
@@ -362,5 +395,6 @@ export const eventsRepository = {
   findAvailablePlacesByEventId,
   findEventsInBoundingBox,
   findEventsNearby,
+  updateCapacity
 
 }   

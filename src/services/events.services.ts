@@ -261,6 +261,13 @@ const getEventsNearby = (params: { lat: number; lng: number; radiusKm?: number }
 
 
 
+const updateCapacity = async (id:string , data:{seat:number})=>{
+
+  const updatedEvent = await eventsRepository.updateCapacity(id,{seat:data.seat})
+  return updatedEvent
+
+}
+
 export const EventService = {
   getEventsByUser,
   getEvents,
@@ -270,6 +277,7 @@ export const EventService = {
   updateEvent,
   getAvailablePlacesByEventId,
   getEventsInViewport,
-  getEventsNearby
+  getEventsNearby,
+  updateCapacity
 
 }

@@ -9,6 +9,7 @@ import { db } from '@/src/utils/db.js';
 import { TicketItemRepository } from '../repositories/TicketItemRepository.repository.js';
 import { UserRepository } from '../repositories/user.repository.js';
 import { TicketItemService } from './TicketItemService.services.js';
+import { eventsRepository } from '../repositories/events.repository.js';
 
 
 /* EventRegistrationService
@@ -190,6 +191,8 @@ export const registerEventParticipant = async (data:
                 },
                 tx
             );
+            // mettre a jour place disponible
+            await eventsRepository.updateCapacity(eventId,{seat:seatsAvailable},tx)
 
             return { type: "FREE_REGISTRATION", ticket };
         });
@@ -254,6 +257,12 @@ const confirmPayment = async (
     if (!payment) {
         throw new AppError(404, "Payment not found for this transaction reference");
     }
+    // recuperer le nombre de places disponible
+
+    const Eventseats = await EventService.getAvailablePlacesByEventId(payment.eventId)
+
+
+
     // Idempotence : webhook déjà traité, on ne rejoue rien
     if (payment.status === "SUCCESS" || payment.status === "FAILED") {
         return payment;
@@ -288,7 +297,12 @@ const confirmPayment = async (
                 tx
             );
 
-            const userMail = await UserRepository.findUserById(payment.userId) ;
+            // mettre a jour la capacity 
+
+            await EventService.updateCapacity(payment.eventId, { seat: Eventseats })
+
+
+            const userMail = await UserRepository.findUserById(payment.userId);
 
             if (!userMail) {
                 throw new AppError(404, "User not found for this payment");
@@ -303,7 +317,7 @@ const confirmPayment = async (
                     defaultEmail: userMail, // ou récupéré via ticket/user
                 },
                 tx
-            ) ;
+            );
 
             // envoi des mails en dehors de la transaction (I/O externe),
             // fait juste après le $transaction plus bas
@@ -321,14 +335,14 @@ const confirmPayment = async (
 }
 
 
-    export const EventParticipantService = {
-        getEventParticipantByUserId,
-        createEventParticipant,
-        deleteEventParticipant,
-        getEventParticipantById,
-        getEventParticipantByEventId,
-        confirmPayment
-    }
+export const EventParticipantService = {
+    getEventParticipantByUserId,
+    createEventParticipant,
+    deleteEventParticipant,
+    getEventParticipantById,
+    getEventParticipantByEventId,
+    confirmPayment
+}
 
 
 

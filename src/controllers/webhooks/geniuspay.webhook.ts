@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { EventParticipantService } from "../../services/eventParticipant.services.js";
 import { AppError } from "@/src/utils/AppError.js";
 import catchAsync from "@/src/utils/catchAsync.js";
+import { EventService } from "@/src/services/events.services.js";
 
 const GENIUSPAY_WEBHOOK_SECRET = process.env.GENIUSPAY_WEBHOOK_SECRET as string;
 
@@ -43,15 +44,20 @@ const geniusPayWebhookHandler = catchAsync(async (req, res) => {
         throw new AppError(400, "Webhook timestamp too old");
     }
 
+    console.log("payload", rawPayload);
     const parsedBody = JSON.parse(rawPayload);
+    console.log("Received GeniusPay webhook:", parsedBody);
     const { event, data } = parsedBody;
 
     if (event === "payment.success" || event === "payment.failed") {
+        console.log('Processing payment webhook for transaction:', data.reference);
         await EventParticipantService.confirmPayment({
             transactionRef: data.reference, // MTX-...
             status: mapGeniusPayStatus(data.status),
             failureReason: event === "payment.failed" ? data.status : undefined,
         });
+
+        //await EventService.updateCapacity
     }
 
     res.status(200).json({ received: true });
