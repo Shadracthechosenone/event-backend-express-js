@@ -248,9 +248,6 @@ export const updatePaymentStatus = (
             status: true,
             paidAt: true,
             transactionRef: true,
-            include:{
-                event:true //besoin de eventId 
-            }
             
         }
     });

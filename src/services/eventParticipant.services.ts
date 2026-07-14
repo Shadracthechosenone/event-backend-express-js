@@ -36,6 +36,7 @@ type Payment = {
     status: PaymentStatus;
     ticketId: string;
     transactionRef: string | null;
+    eventId?:string
 }
 
 
@@ -299,7 +300,7 @@ const confirmPayment = async (
 
             // mettre a jour la capacity 
 
-            await EventService.updateCapacity(payment.eventId, { seat: Eventseats })
+        await eventsRepository.updateCapacity(payment.eventId,{seat:Eventseats},tx)
 
 
             const userMail = await UserRepository.findUserById(payment.userId);

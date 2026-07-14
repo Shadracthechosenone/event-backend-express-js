@@ -9,7 +9,8 @@ import reviewRoutes from "@/src/modules/review/review.route.js"; // Assuming you
 import eventCategoryRoutes from "@/src/modules/eventCategory/eventcategory.routes.js"; // Assuming you have event category routes in a separate file
 import notificationRoutes from "@/src/modules/notification/notification.route.js"; // Assuming you have notification routes in a separate file
 import paymentRoutes from "@/src/modules/payment/payment.route.js"; // Assuming you have payment routes in a separate file
-
+import adminRoutes from "@/src/modules/admin/admin.events.route.js"; // Assuming you have admin routes in a separate file
+import userRoutes from "@/src/modules/users/users.routes.js"; // Assuming you have user routes in a separate file
 
 export const configureV1Routes = () => {
   const router = express.Router();
@@ -22,6 +23,8 @@ export const configureV1Routes = () => {
   router.use("/", eventCategoryRoutes);
   router.use("/", notificationRoutes);
   router.use("/", paymentRoutes);
+  router.use("/admin",adminRoutes); // Dynamically import admin routes
+  router.use("/",userRoutes); // Dynamically import user routes
   // Add other v1 routes here
   // router.use("/users", userRoutes);
   // router.use("/events", eventRoutes);

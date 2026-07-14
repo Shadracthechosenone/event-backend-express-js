@@ -57,7 +57,8 @@ const geniusPayWebhookHandler = catchAsync(async (req, res) => {
             failureReason: event === "payment.failed" ? data.status : undefined,
         });
 
-        //await EventService.updateCapacity
+        //await eventsRepository.updateCapacity(eventId,{seat:seatsAvailable},tx)
+        
     }
 
     res.status(200).json({ received: true });

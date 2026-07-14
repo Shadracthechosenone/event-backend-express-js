@@ -6,7 +6,7 @@ import { eventCategoryController } from "@/src/controllers/eventcategory.control
 
 const router = Router();
 // Define your routes here
-router.get("/event-categories/", protect, eventCategoryController.getEventCategories);
+router.get("/event-categories/",eventCategoryController.getEventCategories); // enlever protect test admin
 router.delete("/event-categories/:id", eventCategoryController.deleteEventCategory);
 router.post("/event-categories", protect, eventCategoryController.createEventCategory);
 router.get("/event-categories/:id", protect, eventCategoryController.getEventCategoryById);

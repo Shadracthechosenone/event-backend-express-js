@@ -99,6 +99,8 @@ const createEvent = asyncHandler(async (req, res, next) => {
             maxCapacity,
             ticketPrice
         } = req.body;
+  console.log(req.body)
+
 
         const event = await EventService.createEvent({
             name,
@@ -192,7 +194,6 @@ const registerToEventHandler = catchAsync(async (req, res) => {
     const { paymentMethod } = req.body;
 
     const eventId = req.params.id as string
-    //console.log("ID from params:", ID);
     const result = await registerEventParticipant({ userId, eventId, paymentMethod });
 
     if (result.type === "FREE_REGISTRATION") {
