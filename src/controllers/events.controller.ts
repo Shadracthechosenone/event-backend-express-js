@@ -189,6 +189,42 @@ const updateEvent = asyncHandler(async (req, res) => {
 })
 
 
+const updateEventAsAdmin = asyncHandler(async (req, res) => {
+    const eventId = req.params.id as string;
+    const {
+        name,
+        description,
+        startAt,
+        endAt,
+        address,
+        latitude,
+        longitude,
+        eventCategoriesId,
+        maxCapacity,
+        ticketPrice
+    } = req.body;
+
+    const updatedEvent = await EventService.updateEventAsAdmin(eventId, {
+        name,
+        description,
+        startAt,
+        endAt,
+        address,
+        latitude,
+        longitude,
+        eventCategoriesId,
+        maxCapacity,
+        ticketPrice
+    });
+
+    sendResponse(res, 200, {
+        message: "Event updated successfully",
+        data: {
+            event: updatedEvent
+        }
+    });
+});
+
 const registerToEventHandler = catchAsync(async (req, res) => {
     const userId = req.user?.id as string;
     const { paymentMethod } = req.body;
@@ -258,7 +294,8 @@ export const eventcontroller = {
     getEventsByUserId,
     registerToEventHandler,
     getEventsInViewportHandler,
-    getEventsNearbyHandler
+    getEventsNearbyHandler,
+    updateEventAsAdmin
 }
 
 

@@ -10,7 +10,7 @@ router.get("/events", eventcontroller.getAllEvents);
 router.delete("/events/:id", eventcontroller.deleteEvent);
 router.post("/events", eventcontroller.createEvent);
 router.get("/events/:id", eventcontroller.getEventById);
-router.put("/events/:id",eventcontroller.updateEvent);
+router.put("/events/:id",eventcontroller.updateEventAsAdmin);
 router.get("/events/user/:id", eventcontroller.getEventsByUserId);
 
 export default router;

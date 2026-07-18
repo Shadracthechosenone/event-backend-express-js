@@ -360,24 +360,56 @@ export { findEventsInBoundingBox, findEventsNearby };
 
 
 const updateCapacity = async (id: string, data: { seat: number },
-      tx?: Prisma.TransactionClient
+  tx?: Prisma.TransactionClient
 ) => {
   const client = tx ?? db
   return client.event.update({
     data: {
-      capacity: data.seat-1
+      capacity: data.seat - 1
     },
     where: {
       id
     },
-    select :{
-      id:true,
-      capacity:true
+    select: {
+      id: true,
+      capacity: true
     }
   }
   )
 
 }
+
+const findRevenue = () => {
+
+  const sum = db.event.aggregate({
+
+    _sum: {
+      ticketPrice: true
+    }
+
+  })
+
+  return sum ;
+}
+
+
+
+const findActiveEvents = ()=>{
+
+  const events = db.event.findMany({
+    where: {
+      status: "ACTIVE"
+    },
+
+    select: {
+      id: true,
+      name: true, }
+
+  })
+  return events;
+
+}
+
 
 
 export const eventsRepository = {
@@ -395,6 +427,7 @@ export const eventsRepository = {
   findAvailablePlacesByEventId,
   findEventsInBoundingBox,
   findEventsNearby,
-  updateCapacity
+  updateCapacity,
+  findRevenue
 
 }   

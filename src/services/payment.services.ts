@@ -63,13 +63,22 @@ const getPaymentById = async (id: string) => {
 }
 
 
+const getPaymentsByStatus = async (status: PaymentStatus) => {
+    const payments = await PaymentRepository.findPaymentsByStatus(status);
+    if (!payments || payments.length === 0) {
+        return [];
+    }
+    return payments;
+}
+
 
 
 export const PaymentService = {
     getPaymentsByUser,
     createPayment,
     deletePayment,
-    getPaymentById
+    getPaymentById,
+    getPaymentsByStatus
 }
 
 

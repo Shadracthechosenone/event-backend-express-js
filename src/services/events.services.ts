@@ -1,7 +1,7 @@
 
 import { countEvents, eventsRepository, findEventsByUserId, findManyEvents } from '@/src/repositories/events.repository.js';
 import AppError from "../utils/AppError.js";
-import { Prisma,EventStatus } from "@prisma/client";
+import { Prisma, EventStatus } from "@prisma/client";
 import ApiFeatures from '../utils/ApiFeatures.js';
 
 
@@ -63,7 +63,7 @@ export const getEvents = async (queryString: Record<string, any>) => {
     where: finalWhere,
     orderBy: orderBy || { createdAt: "desc" },
     skip,
-    take, 
+    take,
     select,
   });
 
@@ -162,7 +162,7 @@ export const updateEvent = async (
       );
     }
   }
-  
+
   // 4. Validation des dates
   const startAt = data.startAt ?? event.startAt;
   const endAt = data.endAt ?? event.endAt;
@@ -220,6 +220,99 @@ export const updateEvent = async (
 };
 
 
+export const updateEventAsAdmin = async (
+  eventId: string,
+  data: UpdateEventDto
+) => {
+  // 1. Vérifier que l'événement existe
+  const event = await eventsRepository.findEventById(eventId);
+
+  if (!event) {
+    throw new Error("Événement introuvable");
+  }
+
+  // 2. Empêcher la modification d'un événement terminé
+  if (
+    event.status === EventStatus.COMPLETED ||
+    new Date(event.endAt) < new Date()
+  ) {
+    const forbiddenFields = [
+      "startAt",
+      "endAt",
+      "ticketPrice",
+      "maxCapacity",
+      "isFree",
+      "eventCategoriesId",
+    ];
+
+    const hasForbiddenUpdate = forbiddenFields.some(
+      (field) => field in data
+    );
+
+    if (hasForbiddenUpdate) {
+      throw new Error(
+        "Cet événement est terminé et ne peut plus être modifié"
+      );
+    }
+  }
+
+  // 3. Validation des dates
+  const startAt = data.startAt ?? event.startAt;
+  const endAt = data.endAt ?? event.endAt;
+
+  if (new Date(startAt) >= new Date(endAt)) {
+    throw new Error(
+      "La date de fin doit être postérieure à la date de début"
+    );
+  }
+
+  // 4. Empêcher le passage gratuit → payant après inscriptions
+  const hasParticipants = (event.participants?.length ?? 0) > 0;
+
+  if (
+    hasParticipants &&
+    event.isFree &&
+    data.isFree === false
+  ) {
+    throw new Error(
+      "Impossible de transformer un événement gratuit en événement payant après les inscriptions"
+    );
+  }
+
+  // 5. Validation du prix
+  if (data.ticketPrice !== undefined && data.ticketPrice < 0) {
+    throw new Error(
+      "Le prix du ticket ne peut pas être négatif"
+    );
+  }
+
+  // 6. Validation de la capacité
+  if (
+    data.maxCapacity !== undefined &&
+    data.maxCapacity !== null
+  ) {
+    const currentParticipants =
+      event.participants?.length ?? 0;
+
+    if (data.maxCapacity < currentParticipants) {
+      throw new Error(
+        `La capacité maximale ne peut pas être inférieure au nombre actuel de participants (${currentParticipants})`
+      );
+    }
+  }
+
+  // 7. Si l'événement devient gratuit
+  if (data.isFree === true) {
+    data.ticketPrice = 0;
+  }
+
+  // 8. Mise à jour
+  const updatedEvent = await eventsRepository.updateEvent(eventId, data);
+
+  return updatedEvent;
+};
+
+
 // services for events mapping and nearby search
 
 const getAvailablePlacesByEventId = async (eventId: string) => {
@@ -230,43 +323,69 @@ const getAvailablePlacesByEventId = async (eventId: string) => {
     throw new AppError(404, "seats not found");
   }
 
-  return seats;}
+  return seats;
+}
 
 
 const getEventsInViewport = (bounds: {
-    swLat: number;
-    swLng: number;
-    neLat: number;
-    neLng: number;
+  swLat: number;
+  swLng: number;
+  neLat: number;
+  neLng: number;
 }) => {
-    // garde-fou : éviter qu'un client demande toute la planète d'un coup
-    const latSpan = bounds.neLat - bounds.swLat;
-    const lngSpan = bounds.neLng - bounds.swLng;
-    if (latSpan > 5 || lngSpan > 5) {
-        throw new AppError(400, "Zone de recherche trop large");
-    }
+  // garde-fou : éviter qu'un client demande toute la planète d'un coup
+  const latSpan = bounds.neLat - bounds.swLat;
+  const lngSpan = bounds.neLng - bounds.swLng;
+  if (latSpan > 5 || lngSpan > 5) {
+    throw new AppError(400, "Zone de recherche trop large");
+  }
 
-    return eventsRepository.findEventsInBoundingBox({ ...bounds, status: "ACTIVE" });
+  return eventsRepository.findEventsInBoundingBox({ ...bounds, status: "ACTIVE" });
 }
 
 const getEventsNearby = (params: { lat: number; lng: number; radiusKm?: number }) => {
-    const radiusKm = params.radiusKm ?? 10; // valeur par défaut raisonnable
+  const radiusKm = params.radiusKm ?? 10; // valeur par défaut raisonnable
 
-    if (radiusKm > 100) {
-        throw new AppError(400, "Le rayon de recherche ne peut pas dépasser 100 km");
-    }
+  if (radiusKm > 100) {
+    throw new AppError(400, "Le rayon de recherche ne peut pas dépasser 100 km");
+  }
 
-    return eventsRepository.findEventsNearby({ lat: params.lat, lng: params.lng, radiusKm });
+  return eventsRepository.findEventsNearby({ lat: params.lat, lng: params.lng, radiusKm });
 }
 
 
 
-const updateCapacity = async (id:string , data:{seat:number})=>{
+const updateCapacity = async (id: string, data: { seat: number }) => {
 
-  const updatedEvent = await eventsRepository.updateCapacity(id,{seat:data.seat})
+  const updatedEvent = await eventsRepository.updateCapacity(id, { seat: data.seat })
   return updatedEvent
 
 }
+
+
+const getRevenue = () => {
+
+  const sum = eventsRepository.findRevenue()
+  return sum;
+
+
+}
+
+const getActiveEvents = async () => {
+
+  const events = await eventsRepository.findManyEvents({
+    where: {
+      status: "ACTIVE"
+    },
+    select: {
+      id: true,
+      name: true,   
+    }
+  })
+
+
+
+  return events;}
 
 export const EventService = {
   getEventsByUser,
@@ -278,6 +397,9 @@ export const EventService = {
   getAvailablePlacesByEventId,
   getEventsInViewport,
   getEventsNearby,
-  updateCapacity
+  updateCapacity,
+  updateEventAsAdmin,
+  getRevenue,
+  getActiveEvents
 
 }
