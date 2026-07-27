@@ -49,6 +49,7 @@ const findTicketItemByQrCode = (qrCode: string) => {
             holderEmail: true,
             usedAt: true,
             ticket: true,
+            //event:true
         }
     });
 }
@@ -541,6 +542,7 @@ const createManyForTicket = async (
             holderEmail: true,
             holderName: true,
             status: true,
+            qrCode:true
         },
     });
 }

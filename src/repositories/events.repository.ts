@@ -205,6 +205,7 @@ export const createEvent = (data:
     maxCapacity?: number;
     ticketPrice: number;
     capacity?: number;
+    isFree?: boolean;
   }
 ) => {
   const { maxCapacity, ...restData } = data

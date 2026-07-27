@@ -90,6 +90,7 @@ const createEvent = async (data: {
   ticketPrice: number;
   maxCapacity?: number;
   capacity?: number;
+  isFree?: boolean;
 }) => {
   const event = await eventsRepository.createEvent(data);
   return event;

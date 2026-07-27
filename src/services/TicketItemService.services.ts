@@ -2,14 +2,19 @@
 import QRCode from "qrcode";
 import sendEmail from "../utils/sendEmail.js"; // ton chemin actuel
 import { TicketItemStatus } from "@prisma/client";
+import AppError from "../utils/AppError.js";
+import { db } from "../utils/db.js";
+import { TicketItemRepository } from "../repositories/TicketItemRepository.repository.js";
+
 
 
 type TicketItem = {
     id: string;
-    status:TicketItemStatus;
+    status: TicketItemStatus;
     ticketId: string;
     holderName: string | null;
     holderEmail: string;
+    qrCode: string
 
 }
 
@@ -23,7 +28,7 @@ const generateQrForTicketItem = async (ticketItemId: string): Promise<Buffer> =>
 };
 
 const sendSingleTicketEmail = async (item: TicketItem): Promise<void> => {
-    const qrBuffer = await generateQrForTicketItem(item.id);
+    const qrBuffer = await generateQrForTicketItem(item.qrCode);
 
     const success = await sendEmail({
         to: item.holderEmail,
@@ -67,9 +72,70 @@ export { sendTicketEmails, generateQrForTicketItem };
 
 
 
+export const verifyTicketQrCode = async (qrCode: string, expectedEventId?: string) => {
+    const ticketItem = await TicketItemRepository.findTicketItemByQrCode(qrCode);
+    console.log("test qrcode",qrCode)
 
+    if (!ticketItem) {
+        throw new AppError(404,"QR code invalide : aucun billet trouvé." );
+    }
 
-export const TicketItemService = {
+    const { ticket } = ticketItem;
 
-    sendTicketEmails
+    if (expectedEventId && ticket.eventId !== expectedEventId) {
+        throw new AppError(400,"Ce billet n'appartient pas à cet événement.");
+    }
+
+    if (ticket.status !== "CONFIRMED") {
+        throw new AppError(400,"Le paiement de ce billet n'est pas confirmé.");
+    }
+
+    if (ticketItem.status === "CANCELLED") {
+        throw new AppError(400,"Ce billet a été annulé." );
+    }
+
+    if (ticketItem.status === "USED") {
+        throw new AppError(409,
+            `Ce billet a déjà été scanné le ${ticketItem.usedAt?.toLocaleString("fr-FR")}.`,
+            
+        );
+    }
+
+    // Transaction : marquer le billet utilisé + check-in du participant en une seule fois
+    const result = await db.$transaction(async (tx) => {
+        const updatedItem = await tx.ticketItem.update({
+            where: { id: ticketItem.id },
+            data: { status: "USED", usedAt: new Date() },
+            select: { id: true, status: true, usedAt: true, holderName: true, holderEmail: true },
+        });
+
+        const participant = await tx.eventParticipant.findUnique({
+            where: { eventId_userId: { eventId: ticket.eventId, userId: ticket.userId } },
+            select: { id: true, checkedIn: true },
+        });
+
+        let updatedParticipant = null;
+        if (participant && !participant.checkedIn) {
+            updatedParticipant = await tx.eventParticipant.update({
+                where: { id: participant.id },
+                data: { checkedIn: true, checkedInAt: new Date(), status: "PRESENT" },
+                select: { id: true, checkedIn: true, checkedInAt: true },
+            });
+        }
+
+        return { updatedItem, updatedParticipant };
+    });
+
+    return {
+        ticketItem: result.updatedItem,
+        event: ticket.eventId,
+        participantCheckedIn: !!result.updatedParticipant,
+    };
 }
+
+
+    export const TicketItemService = {
+
+        sendTicketEmails,
+        verifyTicketQrCode
+    }

@@ -12,6 +12,7 @@ import paymentRoutes from "@/src/modules/payment/payment.route.js"; // Assuming 
 import adminRoutes from "@/src/modules/admin/admin.events.route.js"; // Assuming you have admin routes in a separate file
 import userRoutes from "@/src/modules/users/users.routes.js"; // Assuming you have user routes in a separate file
 import adminStatsRoutes from "@/src/modules/admin/admin.stats.routes.js"; // Assuming you have admin stats routes in a separate file
+import ticketItemRoutes from "@/src/modules/ticketItem/ticketItem.routes.js"
 
 export const configureV1Routes = () => {
   const router = express.Router();
@@ -27,6 +28,7 @@ export const configureV1Routes = () => {
   router.use("/admin",adminRoutes); // Dynamically import admin routes
   router.use("/",userRoutes); // Dynamically import user routes
   router.use("/admin/", adminStatsRoutes); // Dynamically import admin stats routes
+  router.use("/",ticketItemRoutes)
   // Add other v1 routes here
   // router.use("/users", userRoutes);
   // router.use("/events", eventRoutes);

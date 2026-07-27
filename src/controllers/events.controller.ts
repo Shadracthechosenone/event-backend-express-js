@@ -5,6 +5,9 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { registerEventParticipant } from "../services/eventParticipant.services.js";
 import { initiateGeniusPayPayment } from "../services/geniuspay.services.js";
 import catchAsync from "../utils/catchAsync.js"
+import { TicketItemRepository } from "../repositories/TicketItemRepository.repository.js";
+import { UserRepository } from "../repositories/user.repository.js";
+import { TicketItemService } from "../services/TicketItemService.services.js";
 
 
 
@@ -96,10 +99,11 @@ const createEvent = asyncHandler(async (req, res, next) => {
             latitude,
             longitude,
             eventCategoriesId,
+            isFree,
             maxCapacity,
             ticketPrice
         } = req.body;
-  console.log(req.body)
+        console.log(req.body)
 
 
         const event = await EventService.createEvent({
@@ -112,6 +116,7 @@ const createEvent = asyncHandler(async (req, res, next) => {
             latitude,
             longitude,
             eventCategoriesId,
+            isFree,
             maxCapacity,
             ticketPrice
         })
@@ -164,7 +169,8 @@ const updateEvent = asyncHandler(async (req, res) => {
         longitude,
         eventCategoriesId,
         maxCapacity,
-        ticketPrice
+        ticketPrice,
+        isFree
     } = req.body;
 
     const updatedEvent = await EventService.updateEvent(eventId, userId, {
@@ -177,7 +183,8 @@ const updateEvent = asyncHandler(async (req, res) => {
         longitude,
         eventCategoriesId,
         maxCapacity,
-        ticketPrice
+        ticketPrice,
+        isFree
     });
 
     sendResponse(res, 200, {
@@ -231,8 +238,22 @@ const registerToEventHandler = catchAsync(async (req, res) => {
 
     const eventId = req.params.id as string
     const result = await registerEventParticipant({ userId, eventId, paymentMethod });
+    const userMail = await UserRepository.findUserById(userId) as string;
 
     if (result.type === "FREE_REGISTRATION") {
+        // NOUVEAU : génère un TicketItem (donc un QR) par unité achetée
+        const ticketItems = await TicketItemRepository.createManyForTicket(
+            {
+                ticketId: result.ticket.id,
+                quantity: result.ticket.quantity as number,
+                //recipients: data.recipients ?? [], // à ajouter sur ConfirmPaymentInput si pas déjà là
+                defaultEmail: userMail , // ou récupéré via ticket/user
+            }
+
+        );
+        console.log(ticketItems)
+        await TicketItemService.sendTicketEmails(ticketItems); // QR generation + Nodemailer, hors transaction
+        
         return res.status(201).json({ status: "success", data: result.ticket });
     }
 

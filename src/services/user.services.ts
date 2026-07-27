@@ -1,6 +1,6 @@
 import { UserRepository } from '@/src/repositories/user.repository.js';
 import AppError from "../utils/AppError.js";
-import { Prisma, TicketStatus } from "@prisma/client";
+import { Prisma, TicketStatus, ROLE } from "@prisma/client";
 
 
 interface User {
@@ -9,6 +9,15 @@ interface User {
     name: string
 
 }
+
+
+type updateUser = {
+    name: string,
+    email: string,
+    phone: string,
+    role: ROLE
+}
+
 
 const getUserById = async (userId: string): Promise<User | null> => {
     // Logic to fetch all tickets from the 
@@ -31,7 +40,33 @@ const getAllUsers = async (): Promise<User[] | []> => {
 }
 
 
+const createUser = async (data: { name: string; email: string; password: string,phone:string, role: ROLE }) => {
+    const user = await UserRepository.createUser(data);
+    return user;
+}
+
+
+const updateUser = async (id: string, data: updateUser) => {
+    const updatedUser = await UserRepository.updateUser(id, data)
+    return updatedUser
+};
+
+
+const deleteUser = async (id: string) => {
+
+    const user = await UserRepository.findUserById(id)
+    if (!user) {
+        throw new AppError(404, "User not found");
+
+    }
+    return await UserRepository.deleteUser(id)
+
+
+}
 export const UserService = {
     getUserById,
-    getAllUsers
+    getAllUsers,
+    createUser,
+    updateUser,
+    deleteUser
 }

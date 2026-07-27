@@ -12,5 +12,6 @@ router.post("/tickets", protect, ticketController.createTicket);
 router.get("/tickets/:id", protect, ticketController.getTicketById);
 //router.get("/tickets/user/:id", protect, ticketController.getTicketsByUserId);
 
+
 export default router;
 

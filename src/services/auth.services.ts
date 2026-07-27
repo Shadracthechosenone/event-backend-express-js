@@ -33,7 +33,7 @@ export const generateToken = (payload: TokenPayload) => {
     if (!SECRET_KEY || !REFRESH_KEY) {
         throw new Error("JWT secrets are not properly configured");
     }
-    const accesstoken = jwt.sign(payload, SECRET_KEY, { expiresIn: '15m' })
+    const accesstoken = jwt.sign(payload, SECRET_KEY, { expiresIn: '15m' }) //15m
     const refreshtoken = jwt.sign(payload, REFRESH_KEY, { expiresIn: '7d' })
     return { accesstoken, refreshtoken };
 }

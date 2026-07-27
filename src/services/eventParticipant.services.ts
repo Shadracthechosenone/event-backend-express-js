@@ -28,6 +28,7 @@ type Ticket = {
     userId: string,
     price: number,
     status: TicketStatus,
+    quantity?:number
 
 }
 
