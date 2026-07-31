@@ -145,11 +145,6 @@ model Event {
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
-  @@index([latitude, longitude]) // accélère le filtrage par zone
-  @@index([userId]) // "mes événements créés" (organisateur)
-  @@index([eventCategoriesId]) // filtrage par catégorie
-  @@index([status, startAt]) // "événements actifs à venir", triés par date
-
   // Relations
   category      EventCategories    @relation(fields: [eventCategoriesId], references: [id])
   organizer     User               @relation(fields: [userId], references: [id])
@@ -159,15 +154,25 @@ model Event {
   reviews       Review[]
   notifications Notification[]
   Payments      Payment[]
+
+  @@index([latitude, longitude]) // accélère le filtrage par zone
+  @@index([userId]) // "mes événements créés" (organisateur)
+  @@index([eventCategoriesId]) // filtrage par catégorie
+  @@index([status, startAt]) // "événements actifs à venir", triés par date
 }
 
 model EventImage {
-  id        Int      @id @default(autoincrement())
-  eventId   String
-  url       String
-  isPrimary Boolean  @default(false)
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  eventId      String
+  url          String
+  publicId     String   @unique // nécessaire pour supprimer le fichier sur Cloudinary
+  type         String   @default("image") // "image" ou "pdf"
+  format       String? // jpg, png, pdf, etc.
+  bytes        Int?
+  originalName String?
+  isPrimary    Boolean  @default(false)
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
 
   @@index([eventId])
 }
@@ -185,10 +190,6 @@ model Ticket {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  @@index([userId, status]) // "mes tickets en attente/confirmés"
-  @@index([eventId, status]) // "tickets confirmés pour cet event" (compter les ventes)
-  @@index([paymentId])
-
   // Relations
   event   Event    @relation(fields: [eventId], references: [id])
   user    User     @relation(fields: [userId], references: [id])
@@ -196,6 +197,10 @@ model Ticket {
 
   items TicketItem[] // <-- une ligne par place achetée
   // NOTE: plus de "participant" ici — EventParticipant n'est plus lié à un Ticket précis
+
+  @@index([userId, status]) // "mes tickets en attente/confirmés"
+  @@index([eventId, status]) // "tickets confirmés pour cet event" (compter les ventes)
+  @@index([paymentId])
 }
 
 model TicketItem {
@@ -227,13 +232,13 @@ model EventParticipant {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
-  @@unique([eventId, userId]) // 1 ligne "présence" par user, peu importe le nombre de commandes
-  @@index([userId])
-  @@index([eventId, status])
-
   // Relations
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId]) // 1 ligne "présence" par user, peu importe le nombre de commandes
+  @@index([userId])
+  @@index([eventId, status])
 }
 
 // REVIEW
@@ -246,11 +251,11 @@ model Review {
   comment   String?
   createdAt DateTime @default(now())
 
-  @@unique([eventId, userId]) // un seul avis par user par événement
-  @@index([userId])
-
   event Event @relation(fields: [eventId], references: [id])
   user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId]) // un seul avis par user par événement
+  @@index([userId])
 }
 
 // NOTIFICATION
@@ -266,11 +271,11 @@ model Notification {
   data      Json? // metadata libre (ticketId, etc.)
   createdAt DateTime         @default(now())
 
-  @@index([userId, read]) // "mes notifications non lues", cas le plus fréquent
-  @@index([eventId])
-
   user  User   @relation(fields: [userId], references: [id])
   event Event? @relation(fields: [eventId], references: [id])
+
+  @@index([userId, read]) // "mes notifications non lues", cas le plus fréquent
+  @@index([eventId])
 }
 
 model Payment {
@@ -288,12 +293,12 @@ model Payment {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
+  // Relations
+  user   User     @relation(fields: [userId], references: [id])
+  event  Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticket Ticket[]
+
   @@index([userId])
   @@index([eventId])
   @@index([status, createdAt]) // dashboard admin : paiements par statut, triés par date
-
-  // Relations
-  user   User    @relation(fields: [userId], references: [id])
-  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  ticket Ticket[]
 }

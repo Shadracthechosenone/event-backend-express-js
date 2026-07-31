@@ -390,12 +390,12 @@ const findRevenue = () => {
 
   })
 
-  return sum ;
+  return sum;
 }
 
 
 
-const findActiveEvents = ()=>{
+const findActiveEvents = () => {
 
   const events = db.event.findMany({
     where: {
@@ -404,11 +404,27 @@ const findActiveEvents = ()=>{
 
     select: {
       id: true,
-      name: true, }
+      name: true,
+    }
 
   })
   return events;
 
+}
+
+const findEventByTicketId = (ticketId: string) => {
+  const event = db.ticket.findFirst({
+    where: {
+      id: ticketId
+    },
+
+    select: {
+      eventId: true
+    }
+
+  })
+
+  return event;
 }
 
 
@@ -429,6 +445,7 @@ export const eventsRepository = {
   findEventsInBoundingBox,
   findEventsNearby,
   updateCapacity,
-  findRevenue
+  findRevenue,
+  findEventByTicketId
 
 }   

@@ -12,7 +12,9 @@ const PORT = process.env.PORT || 3000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // l'URL de ton front (Vite par ex.)
+    origin: ["http://localhost:5173","https://zzt8pjhk-5173.uks1.devtunnels.ms",
+      "http://192.168.252.186:5173"
+    ], // l'URL de ton front (Vite par ex.)
     credentials: true, // si tu utilises cookies / sessions / auth
   })
 );
@@ -22,7 +24,7 @@ app.use(express.json());
 app.use("/api", configureRoutes());
 
 app.use(globalErrorHandler); // Middleware de gestion des erreurs globales
-app.listen(PORT, () => {
+app.listen(PORT,() => {
   console.log(`Serveur lancé sur le port ${PORT}`);
 });
 

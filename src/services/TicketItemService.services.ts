@@ -5,6 +5,7 @@ import { TicketItemStatus } from "@prisma/client";
 import AppError from "../utils/AppError.js";
 import { db } from "../utils/db.js";
 import { TicketItemRepository } from "../repositories/TicketItemRepository.repository.js";
+import { eventsRepository } from "../repositories/events.repository.js";
 
 
 
@@ -18,8 +19,8 @@ type TicketItem = {
 
 }
 
-const generateQrForTicketItem = async (ticketItemId: string): Promise<Buffer> => {
-    const qrPayload = JSON.stringify({ ticketItemId });
+const generateQrForTicketItem = async (ticketItemId: string, evendId?: string): Promise<Buffer> => {
+    const qrPayload = JSON.stringify({ ticketItemId, evendId });
     return await QRCode.toBuffer(qrPayload, {
         type: "png",
         width: 300,
@@ -28,7 +29,13 @@ const generateQrForTicketItem = async (ticketItemId: string): Promise<Buffer> =>
 };
 
 const sendSingleTicketEmail = async (item: TicketItem): Promise<void> => {
-    const qrBuffer = await generateQrForTicketItem(item.qrCode);
+
+    const event = await eventsRepository.findEventByTicketId(item.ticketId)
+    if (!event) {
+        throw new AppError(404, "Event non trouve");
+
+    }
+    const qrBuffer = await generateQrForTicketItem(item.qrCode, event.eventId);
 
     const success = await sendEmail({
         to: item.holderEmail,
@@ -74,30 +81,30 @@ export { sendTicketEmails, generateQrForTicketItem };
 
 export const verifyTicketQrCode = async (qrCode: string, expectedEventId?: string) => {
     const ticketItem = await TicketItemRepository.findTicketItemByQrCode(qrCode);
-    console.log("test qrcode",qrCode)
+    console.log("test qrcode", qrCode)
 
     if (!ticketItem) {
-        throw new AppError(404,"QR code invalide : aucun billet trouvé." );
+        throw new AppError(404, "QR code invalide : aucun billet trouvé.");
     }
 
     const { ticket } = ticketItem;
 
     if (expectedEventId && ticket.eventId !== expectedEventId) {
-        throw new AppError(400,"Ce billet n'appartient pas à cet événement.");
+        throw new AppError(400, "Ce billet n'appartient pas à cet événement.");
     }
 
     if (ticket.status !== "CONFIRMED") {
-        throw new AppError(400,"Le paiement de ce billet n'est pas confirmé.");
+        throw new AppError(400, "Le paiement de ce billet n'est pas confirmé.");
     }
 
     if (ticketItem.status === "CANCELLED") {
-        throw new AppError(400,"Ce billet a été annulé." );
+        throw new AppError(400, "Ce billet a été annulé.");
     }
 
     if (ticketItem.status === "USED") {
         throw new AppError(409,
             `Ce billet a déjà été scanné le ${ticketItem.usedAt?.toLocaleString("fr-FR")}.`,
-            
+
         );
     }
 
@@ -133,9 +140,35 @@ export const verifyTicketQrCode = async (qrCode: string, expectedEventId?: strin
     };
 }
 
+const findAllByEvent = async (eventId: string) => {
+    return db.ticketItem.findMany({
+        where: {
+            ticket: {
+                eventId: eventId,
+            },
+        },
+        select: {
+            holderName: true,
+            holderEmail: true,
+            status: true,
+            usedAt: true,
+            createdAt: true,
+            ticket: {
+                select: {
+                    price: true,
+                },
+            },
+        },
+        orderBy: {
+            createdAt: "asc",
+        },
+    });
+}
 
     export const TicketItemService = {
 
         sendTicketEmails,
-        verifyTicketQrCode
+        verifyTicketQrCode,
+        findAllByEvent
+        
     }
